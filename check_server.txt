@@ -1,0 +1,38 @@
+To check server is running:
+
+On local use:
+
+http://192.168.4.28:8000/bfg/static-data/%22%22/
+
+or
+
+http://127.0.0.1:8000/bfg/static-data/%22%22/
+
+---------------------------------------------------------------
+
+On remote use the minimum (note the params %22%22 = ""):
+
+https://bidforgame.com/bfg/static-data/%22%22/
+
+or
+
+https://bidforgame.com/bfg/static-data/%7B%22username%22%3A%22%22%2C%22set_hands%22%3A%5B%5D%2C%22use_set_hands%22%3Afalse%2C%22display_hand_type%22%3Afalse%2C%22mode%22%3A%22%22%2C%22tester%22%3Afalse%2C%22timestamp%22%3A1687100100013%7D/
+
+Log
+===
+
+The log will be found at
+
+/home/bidforga/bfg/bfg_wag/stderr.log
+
+
+pillow log
+==========
+
+.../site-packages/PIL/PngImagePlugin.py
+
+comment out lines starting - logger.debug
+
+or on remote
+
+/home/bidforga/virtualenv/bfg/bfg_wag/3.10/lib64/python3.10/site-packages/PIL/PngImagePlugin.py
