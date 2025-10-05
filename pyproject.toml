@@ -12,6 +12,7 @@ dependencies = [
     "django>=5.2.1",
     "django-cors-headers>=4.7.0",
     "djangorestframework>=3.16.0",
+    "endplay>=0.5.12",
     "icecream>=2.1.4",
     "pillow>=11.2.1",
     "requests>=2.32.5",

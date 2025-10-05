@@ -196,21 +196,19 @@ def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
     pbn_list = []
     if '\n' in params.pbn_text:
         pbn_list_raw = (params.pbn_text).split('\n')
-        for item in pbn_list_raw:
-            pbn_list.append(item.replace('<br>', '').strip())
+        pbn_list.extend(item.replace('<br>', '').strip()
+                        for item in pbn_list_raw)
     elif '<br>' in params.pbn_text:
         pbn_list_raw = (params.pbn_text).split('<br>')
-        for item in pbn_list_raw:
-            pbn_list.append(item.strip())
+        pbn_list.extend(item.strip() for item in pbn_list_raw)
     if not pbn_list:
         return None
     log(params.username, 'pbn board', params.pbn_text)
     try:
         raw_board = parse_pbn(pbn_list)[0].boards[0]
-    except ValueError:
+    except (ValueError, IndexError):
         return None
-    except IndexError:
-        return None
+
     board = Board()
     board.get_attributes_from_board(raw_board)
     bid_history = [call.name for call in board.auction.calls]
@@ -239,12 +237,11 @@ def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
 
 def _get_leader(declarer: str) -> str:
     """Return the index of the board leader."""
-    if declarer == '':
+    if not declarer:
         return ''
     seat_index = SEATS.index(declarer)
     leader_index = (seat_index + 1) % 4
-    leader = SEATS[leader_index]
-    return leader
+    return SEATS[leader_index]
 
 
 def update_trick_scores(board: Board, trick: Trick):
