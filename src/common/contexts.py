@@ -40,6 +40,7 @@ def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
     trick_suit = ''
     if board.tricks and board.tricks[-1].suit:
         trick_suit = board.tricks[-1].suit.name
+    print(type(board))
 
     context = {
         'dealer': board.dealer,

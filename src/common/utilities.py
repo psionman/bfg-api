@@ -3,7 +3,7 @@ import json
 from termcolor import cprint
 
 from bridgeobjects import SEATS, Trick
-from bfgcardplay import Board
+from bfgdealer import Board
 
 from .models import Room
 

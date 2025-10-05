@@ -1,8 +1,9 @@
 """Provide images for BfG functions."""
-import os
+
 import io
 import base64
 from PIL import Image as PilImage
+from pathlib import Path
 
 from bridgeobjects import CALLS, CARD_NAMES
 
@@ -21,10 +22,13 @@ class BaseImage():
     """Base class for images."""
     def __init__(self, name, source_directory, rotate):
         self.name = name
-        image_directory = os.path.join(BASE_DIRECTORY,
-                                       IMAGE_DIRECTORY,
-                                       source_directory)
-        image_path = os.path.join(image_directory, f'{name}.{IMAGE_EXTENSION}')
+        image_directory = Path(
+            Path(__file__).parent.parent,
+            BASE_DIRECTORY,
+            IMAGE_DIRECTORY,
+            source_directory
+            )
+        image_path = Path(image_directory, f'{name}.{IMAGE_EXTENSION}')
         image = PilImage.open(image_path)
         if rotate:
             image = image.rotate(90, expand=1)
@@ -36,9 +40,8 @@ class BaseImage():
         io_buffer = io.BytesIO()
         image.save(io_buffer, format='PNG')
         saved_image = io_buffer.getvalue()
-        encoded_image = ''.join(['data:image/jpg;base64,',
-                                 base64.b64encode(saved_image).decode()])
-        return encoded_image
+        return ''.join(
+            ['data:image/jpg;base64,', base64.b64encode(saved_image).decode()])
 
 
 class CardImage(BaseImage):
@@ -55,9 +58,7 @@ class CardImage(BaseImage):
     @staticmethod
     def get_images():
         """Return a dict of call images."""
-        images = {}
-        for card in CARD_NAMES:
-            images[card] = CardImage(card).image
+        images = {card: CardImage(card).image for card in CARD_NAMES}
         images['back'] = CardImage('back').image
         images['back_rotated'] = CardImage('back', rotate=True).image
         images['blank'] = CardImage('blank').image
@@ -78,12 +79,9 @@ class CallImage(BaseImage):
     @staticmethod
     def get_images():
         """Return a dict of call images."""
-        images = {}
         calls = [call for call in CALLS if call not in CALLS_REMOVE]
         calls.extend(CALLS_EXTENSION)
-        for call in calls:
-            images[call] = CallImage(call).image
-        return images
+        return {call: CallImage(call).image for call in calls}
 
 
 # call_images is a dict that contains all the valid calls
