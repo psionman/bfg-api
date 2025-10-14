@@ -20,7 +20,7 @@ from .cardplay import (get_cardplay_context, card_played_context,
                        replay_board_context, claim_context,
                        compare_scores_context)
 from .constants import SOURCES
-from .version import version as api_version
+from _version import version as api_version
 from .logger import log
 
 

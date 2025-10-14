@@ -13,12 +13,31 @@ from common.serializers import RoomSerializer
 from common.utilities import Params
 
 
+class UserLogin(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        log(
+            request.META.get('REMOTE_ADDR'),
+            f'User "{params.username}" logged in.')
+        return JsonResponse({}, safe=False)
+
+
+class UserLogout(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        log(
+            request.META.get('REMOTE_ADDR'),
+            f'User "{params.username}" logged out.')
+        return JsonResponse({}, safe=False)
+
+
 class StaticData(View):
     @staticmethod
     def get(request, params):
-        del request
+        log(request.META.get('REMOTE_ADDR'), 'Access static data')
         params = Params(params)
-        log(params.username, 'login')
         context = app.static_data()
         return JsonResponse(context, safe=False)
 

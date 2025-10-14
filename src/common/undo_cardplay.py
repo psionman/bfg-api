@@ -4,7 +4,7 @@ from bridgeobjects import SEATS
 
 def undo_cardplay(board, mode):
     if len(board.tricks) >= 2 and len(board.tricks[-1].cards) == 0:
-        board.tricks = board.tricks[0: -1]
+        board.tricks = board.tricks[: -1]
     if len(board.tricks) == 1:
         _undo_trick_one(board, mode)
     else:

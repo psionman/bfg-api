@@ -14,6 +14,10 @@ urlpatterns = [
     # Static data
     path('static-data/<str:params>/', views.StaticData.as_view()),
 
+    # user login/out
+    path('user-login/<str:params>/', views.UserLogin.as_view()),
+    path('user-logout/<str:params>/', views.UserLogout.as_view()),
+
     # REST api
     path('api', views.RoomListApiView.as_view()),
     path('api/<str:room_name>', views.RoomDetailApiView.as_view()),

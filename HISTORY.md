@@ -1,8 +1,6 @@
-version = '1.0.6'
+# History
 
-"""
-
-Version 1.0.6 20 JUne 2024
+Version 1.0.6 20 June 2024
 
 Various cosmetic changes
 
@@ -46,4 +44,3 @@ Version 1.0.0 12 July 2023
 Start of version recording.
 
 Undos working bfg netlify version 0.1.6
-"""

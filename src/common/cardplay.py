@@ -95,9 +95,8 @@ def card_played_context(params: dict[str, str]) -> dict[str, object]:
     }
     save_board(room, board)  # needed to display all cards with final score
     state_context = get_board_context(params, room, board)
-    context = {**state_context, **trick_context}
 
-    return context
+    return {**state_context, **trick_context}
 
 
 def _complete_trick(board: Board, update_score: bool) -> str:
@@ -156,7 +155,7 @@ def replay_board_context(params: dict[str, str]) -> dict[str, object]:
     board.EW_tricks = 0
     for seat in SEATS:
         hand = board.hands[seat]
-        hand.unplayed_cards = [card for card in hand.cards]
+        hand.unplayed_cards = list(hand.cards)
     # board.current_player = None
     _setup_first_trick(board)
     suggested_card = _get_suggested_card_name(board, params)
@@ -195,8 +194,8 @@ def claim_context(params):
     }
     log(params.username, 'claim', payload)
     state_context = get_board_context(params, room, board)
-    context = {**state_context, **claim_context}
-    return context
+
+    return {**state_context, **claim_context}
 
 
 def _get_NS_target_tricks(board, params):
@@ -228,7 +227,7 @@ def compare_scores_context(params):
     board.EW_tricks = 0
     for seat in SEATS:
         hand = board.hands[seat]
-        hand.unplayed_cards = [card for card in hand.cards]
+        hand.unplayed_cards = list(hand.cards)
     get_board_context(params, room, board)  # Save the board
     (NS_tricks, EW_tricks) = _play_out_board(params, board, 0)
 
@@ -240,5 +239,4 @@ def compare_scores_context(params):
         'EW_tricks_target': EW_tricks,
     }
 
-    context = {**state_context, **claim_context}
-    return context
+    return {**state_context, **claim_context}
