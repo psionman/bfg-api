@@ -9,12 +9,12 @@ from .utilities import get_room_from_name, three_passes, passed_out
 from .constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
 from .archive import get_pbn_string
 from .contexts import get_board_context
-from .logger import log
-
+from .logger import log, logger
 
 def get_bid_made(params: dict[str, str]) -> dict[str, str]:
     if params.bid == 'restart':
-        log(params.username, 'restart board')
+        logger.info(f' User: <{params.username}> clicked start board.')
+        # log(params.username, 'restart board')
         return _restart_board(params)
     elif params.mode == 'duo':
         return bid_made_duo(params)
@@ -188,10 +188,11 @@ def get_bid_context(params: dict[str, str],
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     bid = _update_bid_history(room, board, use_suggested_bid)
+    logger.info(f'<{params.seat}> bid made: {bid}')
     _update_board_other_bids(board, params.seat)
     room.board = board.to_json()
     room.save()
-    log(params.username, 'bid made', bid)
+    # log(params.username, 'bid made', bid)
 
     (bb_names, bb_extra_names) = BiddingBox().refresh(board.bid_history,
                                                       add_warnings=False)
@@ -225,7 +226,8 @@ def _update_board_other_bids(board: Board, seat: str):
 
     for other in range(3):
         other_seat = (seat_index + 1 + other) % 4
-        board.players[other_seat].make_bid()
+        bid = board.players[other_seat].make_bid()
+        logger.info(f'<{SEATS[other_seat]}> bid made: {bid.name}')
         three_passes_ = three_passes(board.bid_history)
         passed_out_ = passed_out(board.bid_history)
         if three_passes_ and not passed_out_:

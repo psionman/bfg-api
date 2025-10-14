@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from common.models import Room
-from common.logger import log
+from common.logger import log, logger
 
 import common.application as app
 from common.serializers import RoomSerializer
@@ -17,9 +17,12 @@ class UserLogin(View):
     @staticmethod
     def get(request, params):
         params = Params(params)
-        log(
-            request.META.get('REMOTE_ADDR'),
-            f'User "{params.username}" logged in.')
+        ip_address = request.META.get('REMOTE_ADDR')
+        logger.info(
+            f'Address {ip_address}, User: <{params.username}> logged in.')
+        # log(
+        #     request.META.get('REMOTE_ADDR'),
+        #     f' User: <{params.username}> logged in.')
         return JsonResponse({}, safe=False)
 
 
@@ -27,16 +30,35 @@ class UserLogout(View):
     @staticmethod
     def get(request, params):
         params = Params(params)
-        log(
-            request.META.get('REMOTE_ADDR'),
-            f'User "{params.username}" logged out.')
+        ip_address = request.META.get('REMOTE_ADDR')
+        logger.info(
+            f'Address {ip_address},  User: <{params.username}> logged out.')
+        # log(
+        #     request.META.get('REMOTE_ADDR'),
+        #     f' User: <{params.username}> logged out.')
+        return JsonResponse({}, safe=False)
+
+
+class UserSeat(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        ip_address = request.META.get('REMOTE_ADDR')
+        logger.info(
+            (f'Address {ip_address},  User: <{params.username}> '
+             f'sits at {params.seat}.'))
+        # log(
+        #     request.META.get('REMOTE_ADDR'),
+        #     f' User: <{params.username}> logged out.')
         return JsonResponse({}, safe=False)
 
 
 class StaticData(View):
     @staticmethod
     def get(request, params):
-        log(request.META.get('REMOTE_ADDR'), 'Access static data')
+        ip_address = request.META.get('REMOTE_ADDR')
+        logger.info(f'Address {ip_address} Access static data')
+        # log(request.META.get('REMOTE_ADDR'), 'Access static data')
         params = Params(params)
         context = app.static_data()
         return JsonResponse(context, safe=False)

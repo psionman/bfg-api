@@ -1,11 +1,18 @@
 # History
 
+Version 1.1.0 14 Ost 2025
+
+Change logger to structlog
+Add new logging items, seat, login/out, bidding
+
+------------------------------------
+
+
 Version 1.0.6 20 June 2024
 
 Various cosmetic changes
 
 ------------------------------------
-
 Version 1.0.5 3 Nov 2023
 
 Fix get archive board

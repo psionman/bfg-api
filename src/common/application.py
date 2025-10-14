@@ -21,7 +21,7 @@ from .cardplay import (get_cardplay_context, card_played_context,
                        compare_scores_context)
 from .constants import SOURCES
 from _version import version as api_version
-from .logger import log
+from .logger import logger
 
 
 def static_data() -> dict[str, object]:
@@ -101,7 +101,8 @@ def card_played(params: dict[str, str]) -> dict[str, object]:
 
 def replay_board(params: dict[str, str]) -> dict[str, object]:
     """Return the context for replay board."""
-    log(params.username, 'replay board')
+    logger.info(f' User: <{params.username}> clicked replay board.')
+    # log(params.username, 'replay board')
     return replay_board_context(params)
 
 

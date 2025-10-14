@@ -8,7 +8,7 @@ from .utilities import (get_room_from_name, passed_out, save_board,
                         get_current_player)
 from .contexts import get_board_context
 from .board import update_trick_scores
-from .logger import log
+from .logger import log, logger
 
 
 ERROR_COLOUR = 'red'
@@ -64,7 +64,8 @@ def card_played_context(params: dict[str, str]) -> dict[str, object]:
         'seat': board.current_player,
         'card': params.card_played,
     }
-    log(params.username, 'card played', payload)
+    # log(params.username, 'card played', payload)
+    logger.info(f' User: <{params.username}> card played: {payload}.')
 
     # This section here in case a complete trick is presented by PBN
     winner = _complete_trick(board, False)
@@ -192,7 +193,8 @@ def claim_context(params):
         'claim tricks': params.claim_tricks,
         'accepted': accepted
     }
-    log(params.username, 'claim', payload)
+    # log(params.username, 'claim', payload)
+    logger.info(f' User: <{params.username}> claim: {payload}.')
     state_context = get_board_context(params, room, board)
 
     return {**state_context, **claim_context}
