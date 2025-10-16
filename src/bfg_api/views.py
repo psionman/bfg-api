@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from common.models import Room
-from common.logger import log, logger
+from common.logger import logger
 
 import common.application as app
 from common.serializers import RoomSerializer

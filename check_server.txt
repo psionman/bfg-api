@@ -31,7 +31,7 @@ pillow log
 
 .../site-packages/PIL/PngImagePlugin.py
 
-comment out lines starting - logger.debug
+comment out lines starting - logger.info
 
 or on remote
 

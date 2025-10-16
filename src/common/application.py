@@ -20,8 +20,8 @@ from .cardplay import (get_cardplay_context, card_played_context,
                        replay_board_context, claim_context,
                        compare_scores_context)
 from .constants import SOURCES
-from _version import version as api_version
 from .logger import logger
+from ._version import version as api_version
 
 
 def static_data() -> dict[str, object]:

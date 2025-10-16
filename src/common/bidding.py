@@ -9,7 +9,7 @@ from .utilities import get_room_from_name, three_passes, passed_out
 from .constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
 from .archive import get_pbn_string
 from .contexts import get_board_context
-from .logger import log, logger
+from common.logger import logger
 
 def get_bid_made(params: dict[str, str]) -> dict[str, str]:
     if params.bid == 'restart':
