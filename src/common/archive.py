@@ -18,10 +18,9 @@ from .constants import MAX_ARCHIVE
 
 DATE_FORMAT = '%d %b %Y %H:%M:%S'
 
+
 def save_board_to_archive(room: Room, board: Board) -> None:
-    archive = []
-    if room.archive:
-        archive = json.loads(room.archive)
+    archive = json.loads(room.archive) if room.archive else []
     board.description = datetime.now().strftime(DATE_FORMAT)
     archive.insert(0, get_pbn_string(board))
     if len(archive) >= MAX_ARCHIVE:
@@ -38,10 +37,7 @@ def get_history_boards_text(
     for index, board in enumerate(raw_boards):
         board_dict = _get_history_board_dict(index, board)
         boards.append(board_dict)
-    context = {
-        'boards': boards,
-    }
-    return context
+    return {'boards': boards,}
 
 
 def save_boards_file_to_room(params):
@@ -55,39 +51,27 @@ def save_boards_file_to_room(params):
     saved_boards.append(file)
     room.saved_boards = json.dumps(saved_boards)
     room.save()
-    context = {
-        'boards_saved': True,
-        }
-    return context
+    return {'boards_saved': True}
 
 
 def get_user_archive_list(params):
     room = get_room_from_name(params.username)
     saved_boards = json.loads(room.saved_boards)
     archives = sorted([archive['description'] for archive in saved_boards])
-    context = {
-        'archives': archives
-    }
-    return context
+    return {'archives': archives}
 
 
 def get_board_file_from_room(params):
-    # room = get_room_from_name(params.room_name)
-    # saved_boards = json.loads(room.saved_boards)
-    # boards_pbn = saved_boards[params.file_name]
-    # boards = parse_pbn(boards_pbn)
-    context = {
+    return {
         # 'file_names': file_names
     }
-    return context
 
 
 def _get_raw_archive_boards(room_name: str) -> list[Board]:
     room = get_room_from_name(room_name)
-    archive = []
-    if room.archive:
-        archive = json.loads(room.archive)
+    archive = json.loads(room.archive) if room.archive else []
     return _get_boards_from_pbn(archive)
+
 
 def _get_boards_from_pbn(archive) -> list[Board]:
     boards = []
@@ -104,19 +88,16 @@ def _get_history_board_dict(index: int, board: Board) -> dict[str, str]:
     for seat in 'NS':
         hand = board.hands[seat]
         hands[seat] = _get_cards_by_suit(hand)
-    board_dict = {
+    return {
         'identifier': index + 1,
         'date': board.description,
         'hands': hands,
     }
-    return board_dict
 
 
 def _get_cards_by_suit(hand: Hand) -> dict[str, list[Card]]:
-    cards = {}
-    for suit in SUIT_NAMES:
-        cards[suit] = _get__suit_cards_as_string(hand, suit)
-    return cards
+    return {
+        suit: _get__suit_cards_as_string(hand, suit) for suit in SUIT_NAMES}
 
 
 def _get__suit_cards_as_string(hand: Hand, suit: str) -> str:
@@ -133,8 +114,7 @@ def get_pbn_string(board: Board) -> str:
     calls = [Call(bid) for bid in board.bid_history]
     if not board.auction.calls:
         board.auction = Auction(calls, board.dealer)
-    pbn_text = create_pbn_board(board)
-    return pbn_text
+    return create_pbn_board(board)
 
 
 def get_board_from_archive(params: dict[str, str]) -> Board:
@@ -159,8 +139,7 @@ def rotate_archived_boards(params: dict[str, str]) -> dict[str, object]:
     archive = _create_list_of_archive_boards(boards)
     room.archive = json.dumps(archive)
     room.save()
-    context = get_history_boards_text(params)
-    return context
+    return get_history_boards_text(params)
 
 
 def _rotate_board(board: Board, rotation_index: int) -> Board:

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 from pathlib import Path
+import structlog
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +41,7 @@ INSTALLED_APPS = [
     'pages',
     'common',
     'rest_framework',
-    'bfg_api',
+    'bfg_api.apps.BfgApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -78,36 +79,102 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# LOGGING_Orig = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'bfg_file_log': {
+#             'level': 'WARNING',
+#             'class': 'logging.FileHandler',
+#             'filename': 'logging/bfg.log',
+#         },
+#         'django_file': {
+#             'level': 'WARNING',
+#             'class': 'logging.FileHandler',
+#             'filename': 'logging/django.log',
+#         },
+#     },
+#     'loggers': {
+#         'bfg': {
+#                 'handlers': ['bfg_file_log'],
+#                 'level': 'WARNING',
+#                 'propagate': False,
+#         },
+#     },
+# }
+
+# LOGGING_problem = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+
+#     "handlers": {
+#         "null": {
+#             "class": "logging.NullHandler",   # ← sends logs to /dev/null
+#         },
+#     },
+
+#     "loggers": {
+#         "django.server": {
+#             "handlers": ["null"],      # ← drop every runserver line
+#             "level": "INFO",
+#             "propagate": False,
+#         },
+#     },
+# }
+
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'bfg_file_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'logging/bfg.log',
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "formatters": {
+        "structlog_console": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+            "foreign_pre_chain": [
+                structlog.processors.TimeStamper(fmt="iso"),
+                structlog.stdlib.add_log_level,
+                structlog.stdlib.add_logger_name,
+            ],
         },
-        'django_file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'logging/django.log',
+        "structlog_json": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+            "foreign_pre_chain": [
+                structlog.processors.TimeStamper(fmt="iso"),
+                structlog.stdlib.add_log_level,
+                structlog.stdlib.add_logger_name,
+            ],
         },
     },
-    'loggers': {
-        'django': {
-                'handlers': ['django_file'],
-                'level': 'DEBUG',
-                'propagate': False,
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "structlog_console",
+        },
+        "file_json": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "logs/bfg.log",
+            "maxBytes": 5_000_000,
+            "backupCount": 5,
+            "formatter": "structlog_json",
         },
     },
-    'loggers': {
-        'bfg': {
-                'handlers': ['bfg_file_log'],
-                'level': 'DEBUG',
-                'propagate': False,
+
+    "loggers": {
+        "": {   # ROOT LOGGER
+            "handlers": ["console", "file_json"],
+            "level": "INFO",
+        },
+
+        "django.server": {   # optional quieting of runserver spam
+            "handlers": ["console"],
+            "level": "WARNING",  # set django server log level
+            "propagate": False,
         },
     },
 }
+
 
 
 DATABASES = {

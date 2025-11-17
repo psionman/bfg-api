@@ -1,8 +1,8 @@
 """API functionality for BfG."""
 
-
 from importlib.metadata import version
 import json
+import structlog
 
 from bridgeobjects import CALLS
 from bfgdealer import Board, SOLO_SET_HANDS, DUO_SET_HANDS
@@ -20,8 +20,9 @@ from .cardplay import (get_cardplay_context, card_played_context,
                        replay_board_context, claim_context,
                        compare_scores_context)
 from .constants import SOURCES
-from .logger import logger
-from ._version import version as api_version
+from _version import __version__ as api_version
+
+logger = structlog.get_logger()
 
 
 def static_data() -> dict[str, object]:
@@ -120,12 +121,11 @@ def undo(params):
 
 def get_user_set_hands(params):
     room = get_room_from_name(params.room_name)
-    context = {
+    return {
         'set_hands': json.loads(room.set_hands),
         'use_set_hands': room.use_set_hands,
-        'display_hand_type': room.display_hand_type
+        'display_hand_type': room.display_hand_type,
     }
-    return context
 
 
 def set_user_set_hands(params):

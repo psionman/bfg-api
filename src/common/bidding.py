@@ -1,4 +1,6 @@
 
+import structlog
+
 from bridgeobjects import SEATS, Call, Contract, Auction
 from bfgbidding import comment_xrefs
 from bfgdealer import Board
@@ -9,17 +11,17 @@ from .utilities import get_room_from_name, three_passes, passed_out
 from .constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
 from .archive import get_pbn_string
 from .contexts import get_board_context
-from common.logger import logger
+
+logger = structlog.get_logger()
+
 
 def get_bid_made(params: dict[str, str]) -> dict[str, str]:
     if params.bid == 'restart':
         logger.info(f' User: <{params.username}> clicked start board.')
-        # log(params.username, 'restart board')
         return _restart_board(params)
     elif params.mode == 'duo':
         return bid_made_duo(params)
-    else:
-        return bid_made_solo(params)
+    return bid_made_solo(params)
 
 
 def bid_made_duo(params: dict[str, str]) -> dict[str, str]:
@@ -35,9 +37,7 @@ def bid_made_duo(params: dict[str, str]) -> dict[str, str]:
     if three_passes_ and not passed_out_:
         (board.declarer, board.contract) = _get_declarer_contract(board)
 
-    board.warning = None
-    if params.bid in WARNINGS:
-        board.warning = params.bid
+    board.warning = params.bid if params.bid in WARNINGS else None
     room.board = board.to_json()
     room.save()
 
@@ -48,7 +48,6 @@ def bid_made_duo(params: dict[str, str]) -> dict[str, str]:
         'bid_history': board.bid_history,
         'contract': board.contract.name,
         'declarer': board.declarer,
-        # 'warning': board.warning,
         'three_passes': three_passes,
         'passed_out': passed_out,
         'bid_box_names': bb_names,
@@ -65,10 +64,7 @@ def bid_made_solo(params: dict[str, str]) -> dict[str, str]:
     board = Board().from_json(room.board)
 
     suggested_bid = board.players[params.seat].make_bid(False)
-    if suggested_bid.name == params.bid:
-        right_wrong = 'right'
-    else:
-        right_wrong = 'wrong'
+    right_wrong = 'right' if suggested_bid.name == params.bid else 'wrong'
     (bid_comment, strategy_text) = _get_comment_and_strategy(suggested_bid)
 
     room.own_bid = params.bid
@@ -137,25 +133,24 @@ def _get_comment_and_strategy(suggested_bid):
 
 
 def get_initial_auction(params: dict[str, str],
-                        board: Board, bid_history=[]) -> Auction:
+                        board: Board, bid_history=None) -> Auction:
     """Return initial bid_history."""
-    board.bid_history = bid_history
+    board.bid_history = bid_history or []
     dealer_index = SEATS.index(board.dealer)
-    initialparams = _get_initial_bid_parameters
-    (seat_diff, mod_value, initial_count) = initialparams(params, dealer_index)
-    while (len(board.bid_history) + seat_diff) % mod_value != initial_count:
-        if three_passes(board.bid_history):
-            break
+    (seat_diff, mod_value, initial_count) = _get_initial_bid_parameters(
+        params, dealer_index)
+    while (
+            (len(board.bid_history) + seat_diff) % mod_value != initial_count
+            and not three_passes(board.bid_history)):
         player_index = (dealer_index + len(board.bid_history)) % 4
         board.players[player_index].make_bid()
     auction_calls = [Call(call) for call in board.bid_history]
-    auction = Auction(auction_calls, board.dealer)
-    return auction
+    return Auction(auction_calls, board.dealer)
 
 
-def get_auction(board: Board, bid_history=[]) -> Auction:
+def get_auction(board: Board, bid_history=None) -> Auction:
     """Return initial bid_history."""
-    board.bid_history = bid_history
+    board.bid_history = bid_history or []
     dealer_index = SEATS.index(board.dealer)
     while not three_passes(board.bid_history):
         player_index = (dealer_index + len(board.bid_history)) % 4
@@ -192,7 +187,6 @@ def get_bid_context(params: dict[str, str],
     _update_board_other_bids(board, params.seat)
     room.board = board.to_json()
     room.save()
-    # log(params.username, 'bid made', bid)
 
     (bb_names, bb_extra_names) = BiddingBox().refresh(board.bid_history,
                                                       add_warnings=False)
@@ -213,10 +207,7 @@ def get_bid_context(params: dict[str, str],
 
 
 def _update_bid_history(room: Room, board: Board, use_suggested_bid: bool):
-    if use_suggested_bid:
-        bid = room.suggested_bid
-    else:
-        bid = room.own_bid
+    bid = room.suggested_bid if use_suggested_bid else room.own_bid
     board.bid_history.append(bid)
     return bid
 

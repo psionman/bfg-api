@@ -1,16 +1,18 @@
 import json
+import structlog
 
 from django.views import View
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from common.models import Room
-from common.logger import logger
 
+from common.models import Room
 import common.application as app
 from common.serializers import RoomSerializer
 from common.utilities import Params
+
+logger = structlog.get_logger()
 
 
 class UserLogin(View):
@@ -19,10 +21,7 @@ class UserLogin(View):
         params = Params(params)
         ip_address = request.META.get('REMOTE_ADDR')
         logger.info(
-            f'Address {ip_address}, User: <{params.username}> logged in.')
-        # log(
-        #     request.META.get('REMOTE_ADDR'),
-        #     f' User: <{params.username}> logged in.')
+            'User logged in.', user=params.username, ip_address=ip_address)
         return JsonResponse({}, safe=False)
 
 
@@ -32,10 +31,7 @@ class UserLogout(View):
         params = Params(params)
         ip_address = request.META.get('REMOTE_ADDR')
         logger.info(
-            f'Address {ip_address},  User: <{params.username}> logged out.')
-        # log(
-        #     request.META.get('REMOTE_ADDR'),
-        #     f' User: <{params.username}> logged out.')
+            'User logged out.', user=params.username, ip_address=ip_address)
         return JsonResponse({}, safe=False)
 
 
@@ -43,13 +39,8 @@ class UserSeat(View):
     @staticmethod
     def get(request, params):
         params = Params(params)
-        ip_address = request.META.get('REMOTE_ADDR')
         logger.info(
-            (f'Address {ip_address},  User: <{params.username}> '
-             f'sits at {params.seat}.'))
-        # log(
-        #     request.META.get('REMOTE_ADDR'),
-        #     f' User: <{params.username}> logged out.')
+            'User seat allocated.', user=params.username, seat=params.seat)
         return JsonResponse({}, safe=False)
 
 
@@ -57,8 +48,8 @@ class StaticData(View):
     @staticmethod
     def get(request, params):
         ip_address = request.META.get('REMOTE_ADDR')
-        logger.info(f'Address {ip_address} Access static data')
-        # log(request.META.get('REMOTE_ADDR'), 'Access static data')
+        logger.info(
+            'Access static data.', ip_address=ip_address)
         params = Params(params)
         context = app.static_data()
         return JsonResponse(context, safe=False)
@@ -217,24 +208,6 @@ class GetHistory(View):
         params = Params(params)
         context = app.get_history(params)
         return JsonResponse(context, safe=False)
-
-
-# class SaveBoardFile(View):
-#     @staticmethod
-#     def get(request, params):
-#         """Save a file of boards."""
-#         params = Params(params)
-#         context = app.save_board_file(params)
-#         return JsonResponse(context, safe=False)
-
-
-# class SaveBoardFilePut(View):
-#     @staticmethod
-#     def get(request, params):
-#         """Save a file of boards."""
-#         params = Params(params)
-#         context = app.save_board_file(params)
-#         return JsonResponse(context, safe=False)
 
 
 class GetArchiveList(View):

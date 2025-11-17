@@ -1,4 +1,5 @@
 from termcolor import cprint
+import structlog
 
 from bridgeobjects import SEATS, Card
 from bfgdealer import Board, Trick
@@ -8,7 +9,8 @@ from .utilities import (get_room_from_name, passed_out, save_board,
                         get_current_player)
 from .contexts import get_board_context
 from .board import update_trick_scores
-from .logger import log, logger
+
+logger = structlog.get_logger()
 
 
 ERROR_COLOUR = 'red'

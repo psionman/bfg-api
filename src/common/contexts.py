@@ -20,17 +20,13 @@ def _board_context(params, room, board) -> dict[str, str]:
 
 
 def _get_bb_context(mode: str, board: Board) -> dict[str, str]:
-    add_warnings = False
-    if mode == 'duo':
-        add_warnings = True
-
+    add_warnings = mode == 'duo'
     (bb_names, bb_extra_names) = BiddingBox().refresh(board.bid_history,
                                                       add_warnings)
-    bb_context = {
+    return {
         'bid_box_names': bb_names,
         'bid_box_extra_names': bb_extra_names,
     }
-    return bb_context
 
 
 def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
@@ -41,7 +37,7 @@ def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
     if board.tricks and board.tricks[-1].suit:
         trick_suit = board.tricks[-1].suit.name
 
-    context = {
+    return {
         'dealer': board.dealer,
         'bid_history': board.bid_history,
         'board_number': board_number,
@@ -55,7 +51,7 @@ def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
         'previous_player': _get_previous_player(board),
         'tricks': [
             [card.name for card in trick.cards] for trick in board.tricks
-            ],
+        ],
         'tricks_leaders': [trick.leader for trick in board.tricks],
         'trick_count': len(board.tricks),
         'trick_suit': trick_suit,
@@ -75,30 +71,29 @@ def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
         'identifier': board.identifier,
         'test': False,
     }
-    return context
 
 
-def _get_suit_order(board: Board) -> list[str]:  # X
+def _get_suit_order(board: Board) -> list[str]:
     """Return a list of suit order."""
-    if three_passes(board.bid_history):
-        bid_history = board.bid_history[:-3]
-        while bid_history and bid_history[-1] in ['D', 'R']:
-            bid_history = board.bid_history[:-1]
-        contract_suit_name = bid_history[-1]
-        suit = contract_suit_name[-1]
-        if suit in DEFAULT_SUIT_ORDER:
-            if suit == 'S':
-                return DEFAULT_SUIT_ORDER
-            if suit == 'H':
-                return ['H', 'S', 'D', 'C']
-            if suit == 'D':
-                return ['D', 'S', 'H', 'C']
-            if suit == 'C':
-                return ['C', 'H', 'S', 'D']
-        else:
-            return DEFAULT_SUIT_ORDER
-    else:
+    if not three_passes(board.bid_history):
         return DEFAULT_SUIT_ORDER
+
+    bid_history = board.bid_history[:-3]
+    while bid_history and bid_history[-1] in ['D', 'R']:
+        bid_history = board.bid_history[:-1]
+    contract_suit_name = bid_history[-1]
+    suit = contract_suit_name[-1]
+
+    if suit not in DEFAULT_SUIT_ORDER:
+        return DEFAULT_SUIT_ORDER
+    if suit == 'S':
+        return DEFAULT_SUIT_ORDER
+    if suit == 'H':
+        return ['H', 'S', 'D', 'C']
+    if suit == 'D':
+        return ['D', 'S', 'H', 'C']
+    if suit == 'C':
+        return ['C', 'H', 'S', 'D']
 
 
 def _sort_hand_cards(board: Board) -> list[str]:
@@ -120,7 +115,7 @@ def _unplayed_card_names(board: Board) -> dict[str, str]:
     for seat in SEATS:
         hand = board.hands[seat]
         hand_for_shape = Hand(hand.unplayed_cards)
-        hand_for_shape.cards = [card for card in hand.unplayed_cards]
+        hand_for_shape.cards = list(hand.unplayed_cards)
         unplayed = Hand.sort_card_list(hand_for_shape.cards, suit_order)
         unplayed_card_names[seat] = [card.name for card in unplayed]
     return unplayed_card_names
@@ -131,7 +126,7 @@ def _max_suit_length(board: Board) -> dict[str, int]:
     for seat in SEATS:
         hand = board.hands[seat]
         hand_for_shape = Hand(hand.unplayed_cards)
-        hand_for_shape.cards = [card for card in hand.unplayed_cards]
+        hand_for_shape.cards = list(hand.unplayed_cards)
         max_suit_length[seat] = hand_for_shape.shape[0]
     return max_suit_length
 
@@ -142,7 +137,7 @@ def _hand_suit_length(board: Board) -> dict[str, int]:
     for seat in SEATS:
         hand = board.hands[seat]
         hand_for_shape = Hand(hand.unplayed_cards)
-        hand_for_shape.cards = [card for card in hand.unplayed_cards]
+        hand_for_shape.cards = list(hand.unplayed_cards)
         hand_suit_length[seat] = [hand_for_shape.suit_length(suit)
                                   for suit in suits]
     return hand_suit_length
@@ -161,8 +156,7 @@ def _get_previous_player(board: Board) -> str:
     elif len(board.tricks) > 1:
         leader_index = SEATS.index(board.tricks[-2].leader)
         previous_player_index = (leader_index - 1) % 4
-    previous_player = SEATS[previous_player_index]
-    return previous_player
+    return SEATS[previous_player_index]
 
 
 def _get_score(board: Board) -> int:
@@ -181,8 +175,7 @@ def _get_dummy_seat(board: Board) -> str | None:
 
 def _suits_by_order(board: Board) -> list[str]:
     suit_order = _get_suit_order(board)
-    suits = [SUITS[suit_name] for suit_name in suit_order]
-    return suits
+    return [SUITS[suit_name] for suit_name in suit_order]
 
 
 def _calculate_score(board: Board) -> int:

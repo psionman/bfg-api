@@ -1,5 +1,5 @@
-from termcolor import cprint
 import json
+import structlog
 
 from bfgcardplay import next_card
 from bridgeobjects import SEATS, VULNERABILITY, parse_pbn
@@ -12,7 +12,8 @@ from .contexts import get_board_context, get_pbn_string
 from .constants import SOURCES, CONTRACT_BASE
 from .archive import save_board_to_archive, get_board_from_archive
 from .undo_cardplay import undo_cardplay
-from .logger import log, logger
+
+logger = structlog.get_logger()
 
 
 def get_new_board(params: dict[str, str]) -> dict[str, object]:
@@ -27,9 +28,12 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
 
     board.auction = get_initial_auction(params, board, [])
     save_board_to_archive(room, board)
-    pbn_string = get_pbn_string(board)
-    # log(params.username, 'new board', pbn_string)
-    logger.info(f' User: <{params.username}> clicked new board.')
+    logger.info('New board clicked', user=params.username)
+    seat_index = SEATS.index(board.dealer)
+    for call in board.auction.calls:
+        logger.info(f'<{SEATS[seat_index]}> bid made: {call.name}')
+        seat_index += 1
+        seat_index %= 4
     return get_board_context(params, room, board)
 
 
@@ -74,6 +78,7 @@ def _get_random_board(params) -> Board:
     board.set_hand = None
     board.source = SOURCES['random']
     _set_board_hands(board)
+    print(f'{board.auction=}')
     return board
 
 
@@ -104,8 +109,7 @@ def get_room_board(params: dict[str, str]) -> dict[str, object]:
         'source': board.source,
         'contract_target': CONTRACT_BASE + board.contract.level,
     }
-    context = {**state_context, **specific_context}
-    return context
+    return {**state_context, **specific_context}
 
 
 def get_history_board(params) -> Board:
@@ -117,7 +121,6 @@ def get_history_board(params) -> Board:
     board.auction = get_initial_auction(params, board, [])
     pbn_string = get_pbn_string(board)
     board.source = SOURCES['history']
-    # log(params.username, 'history board', pbn_string)
     logger.info(f' User: <{params.username}> history board: {pbn_string}')
     return get_board_context(params, room, board)
 
@@ -149,8 +152,6 @@ def get_board_from_pbn(params):
     board.display_stats()
 
     trick_context = _trick_context_for_pbn_board(board)
-    # trick = board.tricks[-1]
-    # board.current_player = trick.winner
     room = get_room_from_name(params.room_name)
     board_context = get_board_context(params, room, board)
     return {**board_context, **trick_context}
@@ -162,8 +163,7 @@ def _trick_context_for_pbn_board(board: Board) -> dict[str, str]:
         board.tricks.append(trick)
     trick_context = _play_initial_cards(board)
 
-    suggested_card = next_card(board)
-    if suggested_card:
+    if suggested_card := next_card(board):
         trick_context['suggested_card'] = suggested_card.name
     return trick_context
 
@@ -186,12 +186,11 @@ def _play_initial_cards(board: Board) -> dict[str, str]:
 def _trick_context(trick: Trick) -> dict[str, object]:
     if not trick.cards:
         return {}
-    trick_context = {
+    return {
         'trick_leader': trick.leader,
         'trick_suit': trick.suit.name,
         'trick_cards': [card.name for card in trick.cards],
     }
-    return trick_context
 
 
 def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
@@ -205,7 +204,6 @@ def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
         pbn_list.extend(item.strip() for item in pbn_list_raw)
     if not pbn_list:
         return None
-    # log(params.username, 'pbn board', params.pbn_text)
     logger.info(f' User: <{params.username}> pbn board: {params.pbn_text}')
     try:
         raw_board = parse_pbn(pbn_list)[0].boards[0]
@@ -226,16 +224,6 @@ def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
     board.contract = contract
     get_unplayed_cards_for_board_hands(board)
     return board
-
-
-# def setup_first_trick_for_board(board: Board) -> Trick:
-#     """Set up and return the first trick for a board."""
-#     trick = Trick()
-#     if board.contract.declarer:
-#         current_player = _get_leader(board.contract.declarer)
-#         board.current_player = current_player
-#         trick.leader = current_player
-#     return trick
 
 
 def _get_leader(declarer: str) -> str:
@@ -260,18 +248,14 @@ def undo_context(params):
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     if board.contract.name:
-        # log(params.username, 'undo card play')
         logger.info(f' User: <{params.username}> clicked undo card play')
         undo_cardplay(board, params.mode)
         board.current_player = get_current_player(board.tricks[-1])
     else:
-        # log(params.username, 'undo bid')
         logger.info(f' User: <{params.username}> clicked undo bid')
         _undo_bids(board, params.seat)
 
-    state_context = get_board_context(params, room, board)
-    # dict_print(state_context)
-    return state_context
+    return get_board_context(params, room, board)
 
 
 def _undo_bids(board, seat):
