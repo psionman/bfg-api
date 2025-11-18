@@ -254,12 +254,12 @@ def undo_context(params):
     board = Board().from_json(room.board)
 
     if board.contract.name:
-        logger.info('Undo card play clicked', username=params.username)
+        logger.info('Undo card play clicked', username=params.username, seat=params.seat)
         undo_cardplay(board, params.mode)
         board.current_player = get_current_player(board.tricks[-1])
     else:
         _undo_bids(board, params)
-        logger.info('Undo bid clicked', username=params.username)
+        logger.info('Undo bid clicked', username=params.username, seat=params.seat)
     return get_board_context(params, room, board)
 
 
