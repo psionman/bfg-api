@@ -252,30 +252,29 @@ def update_trick_scores(board: Board, trick: Trick):
 def undo_context(params):
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
+
     if board.contract.name:
         logger.info('Undo card play clicked', username=params.username)
         undo_cardplay(board, params.mode)
         board.current_player = get_current_player(board.tricks[-1])
     else:
+        _undo_bids(board, params)
         logger.info('Undo bid clicked', username=params.username)
-        _undo_bids(board, params.seat)
-
     return get_board_context(params, room, board)
 
 
-def _undo_bids(board, seat):
-    last_bid = _get_players_last_bid(board, seat)
-    while board.bid_history[-1] != last_bid:
-        board.bid_history = board.bid_history[:-1]
-    board.bid_history = board.bid_history[:-1]
+def _undo_bids(board, params: dict) -> None:
+    bid_history = list(board.bid_history)
+    bidder_seat_index = SEATS.index(board.dealer) + len(board.bid_history) - 1
+    bidder_seat_index %= 4
 
+    while bidder_seat_index != SEATS.index(params.seat):
+        bid_history.pop(-1)
+        bidder_seat_index -= 1
+        bidder_seat_index %= 4
 
-def _get_players_last_bid(board, seat):
-    bidder_index = SEATS.index(board.dealer)
-    calls = {seat_name: '' for seat_name in SEATS}
-    for call in board.bid_history:
-        bidder_seat = SEATS[bidder_index]
-        calls[bidder_seat] = call
-        bidder_index += 1
-        bidder_index %= 4
-    return calls[seat]
+    if bid_history:
+        bid_history.pop(-1)
+
+    board.bid_history = list(bid_history) or [
+        call.name for call in get_initial_auction(params, board).calls]

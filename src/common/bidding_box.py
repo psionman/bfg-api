@@ -1,4 +1,4 @@
-from bridgeobjects import CALLS
+from bridgeobjects import CALLS, Auction
 from .images import CALLS_REMOVE
 
 EXTRA_CALLS = ['P', 'D', 'R']
@@ -21,40 +21,39 @@ class BiddingBox(object):
         bb_extra_names = self._bidding_box_extras(bid_history, add_warnings)
         return (bb_names, bb_extra_names)
 
-    def _bidding_box(self, bid_history):
+    def _bidding_box(self, bid_history: list) -> list:
         """Return bid box images as a lists of images and names."""
         bb_names = []
-        calls_remove = [call for call in EXTRA_CALLS]
-        for call in CALLS_REMOVE:
-            calls_remove.append(call)
+        calls_remove = list(EXTRA_CALLS)
+        calls_remove.extend(iter(CALLS_REMOVE))
         calls = [call for call in CALLS if call not in calls_remove]
-        for call in calls:
-            bb_names.append(call)
+        bb_names.extend(iter(calls))
         bb_names = self._remove_used_from_bidding_box(bb_names, bid_history)
         return bb_names
 
     def _remove_used_from_bidding_box(self, bb_names, bid_history):
         """Remove bids up to last used from the bidding box."""
-        last_bid_index = -1
-        for bid in bid_history[::-1]:
-            if bid not in ('P', 'D', 'R'):
-                last_bid_index = CALLS.index(bid)
-                break
+        last_bid_index = next(
+            (
+                CALLS.index(bid)
+                for bid in bid_history[::-1]
+                if bid not in ('P', 'D', 'R')
+            ),
+            -1,
+        )
         for index in range(last_bid_index+1):
             bb_names[index] = 'blank'
         return bb_names
 
     def _bidding_box_extras(self, bid_history, add_warnings):
         """Return P and D and R bid box images and names as lists."""
-        bb_names = []
-        bb_names.append('P')
+        bb_names = ['P']
         if self._can_show_double(bid_history):
             bb_names.append('D')
         if self._can_show_redouble(bid_history):
             bb_names.append('R')
         if add_warnings:
-            bb_names.append('alert')
-            bb_names.append('stop')
+            bb_names.extend(('alert', 'stop'))
         return bb_names
 
     @staticmethod
@@ -71,16 +70,14 @@ class BiddingBox(object):
             return False
         if _all_passes():
             return False
-        if (bid_history[-1] != 'P' and
-                bid_history[-1] != 'D' and
-                bid_history[-1] != 'R'):
+        if bid_history[-1] not in ['P', 'D', 'R']:
             return True
-        if (len(bid_history) >= 3 and
-                bid_history[-3] not in ('P', 'D', 'R') and
-                bid_history[-2] == 'P' and
-                bid_history[-1] == 'P'):
-            return True
-        return False
+        return (
+            len(bid_history) >= 3
+            and bid_history[-3] not in ('P', 'D', 'R')
+            and bid_history[-2] == 'P'
+            and bid_history[-1] == 'P'
+        )
 
     @staticmethod
     def _can_show_redouble(bid_history):
