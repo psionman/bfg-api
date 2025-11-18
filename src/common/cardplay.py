@@ -62,12 +62,11 @@ def card_played_context(params: dict[str, str]) -> dict[str, object]:
     """
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
-    payload = {
-        'seat': board.current_player,
-        'card': params.card_played,
-    }
-    # log(params.username, 'card played', payload)
-    logger.info(f' User: <{params.username}> card played: {payload}.')
+    logger.info(
+            'card played',
+            card=params.card_played,
+            username=params.card_player,
+            seat=board.current_player)
 
     # This section here in case a complete trick is presented by PBN
     winner = _complete_trick(board, False)
@@ -191,12 +190,12 @@ def claim_context(params):
     claim_context = {
         'accept_claim': accepted,
     }
-    payload = {
-        'claim tricks': params.claim_tricks,
-        'accepted': accepted
-    }
-    # log(params.username, 'claim', payload)
-    logger.info(f' User: <{params.username}> claim: {payload}.')
+
+    logger.info(
+        'Claim made',
+        username=params.username,
+        tricks=params.claim_tricks,
+        accepted=accepted)
     state_context = get_board_context(params, room, board)
 
     return {**state_context, **claim_context}

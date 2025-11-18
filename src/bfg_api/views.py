@@ -21,7 +21,7 @@ class UserLogin(View):
         params = Params(params)
         ip_address = request.META.get('REMOTE_ADDR')
         logger.info(
-            'User logged in.', user=params.username, ip_address=ip_address)
+            'User logged in', username=params.username, ip_address=ip_address)
         return JsonResponse({}, safe=False)
 
 
@@ -31,7 +31,7 @@ class UserLogout(View):
         params = Params(params)
         ip_address = request.META.get('REMOTE_ADDR')
         logger.info(
-            'User logged out.', user=params.username, ip_address=ip_address)
+            'User logged out', username=params.username, ip_address=ip_address)
         return JsonResponse({}, safe=False)
 
 
@@ -40,7 +40,7 @@ class UserSeat(View):
     def get(request, params):
         params = Params(params)
         logger.info(
-            'User seat allocated.', user=params.username, seat=params.seat)
+            'User seat allocate.', username=params.username, seat=params.seat)
         return JsonResponse({}, safe=False)
 
 
@@ -49,7 +49,7 @@ class StaticData(View):
     def get(request, params):
         ip_address = request.META.get('REMOTE_ADDR')
         logger.info(
-            'Access static data.', ip_address=ip_address)
+            'Access static data', ip_address=ip_address)
         params = Params(params)
         context = app.static_data()
         return JsonResponse(context, safe=False)

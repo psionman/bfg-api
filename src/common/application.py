@@ -102,7 +102,7 @@ def card_played(params: dict[str, str]) -> dict[str, object]:
 
 def replay_board(params: dict[str, str]) -> dict[str, object]:
     """Return the context for replay board."""
-    logger.info(f' User: <{params.username}> clicked replay board.')
+    logger.info('Clicked replay board', username=params.username)
     # log(params.username, 'replay board')
     return replay_board_context(params)
 

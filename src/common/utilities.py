@@ -37,6 +37,7 @@ class Params():
         self.file_name = self._update_attribute(params, 'file_name')
         self.mode = self._update_attribute(params, 'mode')
         self.card_played = self._update_attribute(params, 'card_played')
+        self.card_player = self._update_attribute(params, 'card_player')
         self.board_number = self._update_attribute(params, 'board_number')
         self.rotation_seat = self._update_attribute(params, 'rotation_seat')
         self.dealer = self._update_attribute(params, 'dealer')

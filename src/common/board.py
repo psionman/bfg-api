@@ -28,10 +28,14 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
 
     board.auction = get_initial_auction(params, board, [])
     save_board_to_archive(room, board)
-    logger.info('New board clicked', user=params.username)
+    logger.info('New board clicked', username=params.username)
     seat_index = SEATS.index(board.dealer)
     for call in board.auction.calls:
-        logger.info(f'<{SEATS[seat_index]}> bid made: {call.name}')
+        logger.info(
+            'bid made',
+            call=call.name,
+            username='system',
+            seat=SEATS[seat_index])
         seat_index += 1
         seat_index %= 4
     return get_board_context(params, room, board)
@@ -121,7 +125,7 @@ def get_history_board(params) -> Board:
     board.auction = get_initial_auction(params, board, [])
     pbn_string = get_pbn_string(board)
     board.source = SOURCES['history']
-    logger.info(f' User: <{params.username}> history board: {pbn_string}')
+    logger.info('Get archive board', username=params.username, board=pbn_string)
     return get_board_context(params, room, board)
 
 
@@ -204,7 +208,8 @@ def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
         pbn_list.extend(item.strip() for item in pbn_list_raw)
     if not pbn_list:
         return None
-    logger.info(f' User: <{params.username}> pbn board: {params.pbn_text}')
+    logger.info(
+        'Board from pbn', username=params.username, board=pbn_list)
     try:
         raw_board = parse_pbn(pbn_list)[0].boards[0]
     except (ValueError, IndexError):
@@ -248,11 +253,11 @@ def undo_context(params):
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     if board.contract.name:
-        logger.info(f' User: <{params.username}> clicked undo card play')
+        logger.info('Undo card play clicked', username=params.username)
         undo_cardplay(board, params.mode)
         board.current_player = get_current_player(board.tricks[-1])
     else:
-        logger.info(f' User: <{params.username}> clicked undo bid')
+        logger.info('Undo bid clicked', username=params.username)
         _undo_bids(board, params.seat)
 
     return get_board_context(params, room, board)

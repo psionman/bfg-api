@@ -17,7 +17,7 @@ logger = structlog.get_logger()
 
 def get_bid_made(params: dict[str, str]) -> dict[str, str]:
     if params.bid == 'restart':
-        logger.info(f' User: <{params.username}> clicked start board.')
+        logger.info('Clicked restart board', username=params.username)
         return _restart_board(params)
     elif params.mode == 'duo':
         return bid_made_duo(params)
@@ -183,8 +183,9 @@ def get_bid_context(params: dict[str, str],
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     bid = _update_bid_history(room, board, use_suggested_bid)
-    logger.info(f'<{params.seat}> bid made: {bid}')
-    _update_board_other_bids(board, params.seat)
+    logger.info(
+        'bid made', call=bid, username=params.username, seat=params.seat)
+    _update_board_other_bids(board, params)
     room.board = board.to_json()
     room.save()
 
@@ -212,13 +213,17 @@ def _update_bid_history(room: Room, board: Board, use_suggested_bid: bool):
     return bid
 
 
-def _update_board_other_bids(board: Board, seat: str):
-    seat_index = SEATS.index(seat)
+def _update_board_other_bids(board: Board, params: dict) -> None:
+    seat_index = SEATS.index(params.seat)
 
     for other in range(3):
         other_seat = (seat_index + 1 + other) % 4
         bid = board.players[other_seat].make_bid()
-        logger.info(f'<{SEATS[other_seat]}> bid made: {bid.name}')
+        logger.info(
+            'bid made',
+            call=bid.name,
+            username='system',
+            seat=SEATS[other_seat])
         three_passes_ = three_passes(board.bid_history)
         passed_out_ = passed_out(board.bid_history)
         if three_passes_ and not passed_out_:
