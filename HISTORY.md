@@ -1,5 +1,9 @@
 # History
 
+## Version 1.2.1 28 Nov 2025
+
+1. SHow pbn on board selection logging
+
 ## Version 1.2.0 19 Nov 2025
 
 1. Standardise logging messages
@@ -25,7 +29,6 @@
 ## Version 1.0.3 17 Aug 2023
 
 1. Fix score adjustment in undo
-
 
 ## Version 1.0.2 24 July 2023
 

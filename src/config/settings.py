@@ -79,102 +79,58 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# LOGGING_Orig = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'bfg_file_log': {
-#             'level': 'WARNING',
-#             'class': 'logging.FileHandler',
-#             'filename': 'logging/bfg.log',
-#         },
-#         'django_file': {
-#             'level': 'WARNING',
-#             'class': 'logging.FileHandler',
-#             'filename': 'logging/django.log',
-#         },
-#     },
-#     'loggers': {
-#         'bfg': {
-#                 'handlers': ['bfg_file_log'],
-#                 'level': 'WARNING',
-#                 'propagate': False,
-#         },
-#     },
-# }
-
-# LOGGING_problem = {
-#     "version": 1,
-#     "disable_existing_loggers": False,
-
-#     "handlers": {
-#         "null": {
-#             "class": "logging.NullHandler",   # ← sends logs to /dev/null
-#         },
-#     },
-
-#     "loggers": {
-#         "django.server": {
-#             "handlers": ["null"],      # ← drop every runserver line
-#             "level": "INFO",
-#             "propagate": False,
-#         },
-#     },
-# }
-
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
+    'version': 1,
+    'disable_existing_loggers': False,
 
-    "formatters": {
-        "structlog_console": {
-            "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.dev.ConsoleRenderer(),
-            "foreign_pre_chain": [
-                structlog.processors.TimeStamper(fmt="iso"),
+    'formatters': {
+        'structlog_console': {
+            '()': structlog.stdlib.ProcessorFormatter,
+            'processor': structlog.dev.ConsoleRenderer(),
+            'foreign_pre_chain': [
+                structlog.processors.TimeStamper(fmt='iso'),
                 structlog.stdlib.add_log_level,
                 structlog.stdlib.add_logger_name,
             ],
         },
-        "structlog_json": {
-            "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.processors.JSONRenderer(),
-            "foreign_pre_chain": [
-                structlog.processors.TimeStamper(fmt="iso"),
+        'structlog_json': {
+            '()': structlog.stdlib.ProcessorFormatter,
+            'processor': structlog.processors.JSONRenderer(),
+            'foreign_pre_chain': [
+                structlog.processors.TimeStamper(fmt='iso'),
                 structlog.stdlib.add_log_level,
                 structlog.stdlib.add_logger_name,
             ],
         },
     },
 
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "structlog_console",
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'structlog_console',
         },
-        "file_json": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": "logs/bfg.log",
-            "maxBytes": 5_000_000,
-            "backupCount": 5,
-            "formatter": "structlog_json",
+        'file_json': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'logs/bfg.log',
+            'maxBytes': 5_000_000,
+            'backupCount': 5,
+            'formatter': 'structlog_json',
         },
     },
 
-    "loggers": {
-        "": {   # ROOT LOGGER
-            "handlers": ["console", "file_json"],
-            "level": "INFO",
+    'loggers': {
+        '': {   # ROOT LOGGER
+            'handlers': ['console', 'file_json'],
+            'level': 'INFO',
         },
 
-        "django.server": {   # optional quieting of runserver spam
-            "handlers": ["console"],
-            "level": "WARNING",  # set django server log level
-            "propagate": False,
+        'django.server': {   # optional quieting of runserver spam
+            'handlers': ['console'],
+            'level': 'WARNING',  # set django server log level
+            'propagate': False,
         },
     },
 }
-
 
 
 DATABASES = {

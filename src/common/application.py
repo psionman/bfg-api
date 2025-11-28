@@ -134,6 +134,10 @@ def set_user_set_hands(params):
     room.use_set_hands = params.use_set_hands
     room.display_hand_type = params.display_hand_type
     room.save()
+    logger.info(
+        'Update set hands',
+        username=params.username,
+        set_hands=params.set_hands)
 
 
 def package_versions():

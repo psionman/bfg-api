@@ -24,11 +24,14 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
     board.vulnerable = VULNERABILITY[room.board_number % 16]
     board.dealer = SEATS[(room.board_number - 1) % 4]
 
-    board.display_stats()
+    logger.info(
+        'New board',
+        username=params.username,
+        pbn=board.create_pbn_list()
+        )
 
     board.auction = get_initial_auction(params, board, [])
     save_board_to_archive(room, board)
-    logger.info('New board clicked', username=params.username)
     seat_index = SEATS.index(board.dealer)
     for call in board.auction.calls:
         logger.info(
@@ -42,6 +45,8 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
 
 
 def _get_new_board(params: dict[str, str]) -> tuple[int, Board]:
+    if not params.set_hands:
+        return _get_random_board(params)
     if params.use_set_hands:
         return _get_set_hand(params)
     return _get_random_board(params)
@@ -82,7 +87,6 @@ def _get_random_board(params) -> Board:
     board.set_hand = None
     board.source = SOURCES['random']
     _set_board_hands(board)
-    print(f'{board.auction=}')
     return board
 
 
@@ -120,12 +124,16 @@ def get_history_board(params) -> Board:
     room = get_room_from_name(params.room_name)
     board = get_board_from_archive(params)
 
-    board.display_stats()
+    # board.display_stats()
+    logger.info(
+        'Board from history',
+        username=params.username,
+        pbn=board.create_pbn_list())
 
     board.auction = get_initial_auction(params, board, [])
     pbn_string = get_pbn_string(board)
     board.source = SOURCES['history']
-    logger.info('Get archive board', username=params.username, board=pbn_string)
+    # logger.info('Get archive board', username=params.username, board=pbn_string)
     return get_board_context(params, room, board)
 
 
@@ -153,7 +161,12 @@ def get_board_from_pbn(params):
 
     board.source = SOURCES['pbn']
     get_unplayed_cards_for_board_hands(board)
-    board.display_stats()
+    # board.display_stats()
+    logger.info(
+        'Board from pbn',
+        username=params.username,
+        pbn=board.create_pbn_list()
+    )
 
     trick_context = _trick_context_for_pbn_board(board)
     room = get_room_from_name(params.room_name)
