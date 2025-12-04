@@ -4,7 +4,7 @@ from common.bidding_box import BiddingBox
 
 from .archive import get_pbn_string
 from .constants import DEFAULT_SUIT_ORDER
-from .utilities import save_board, three_passes, passed_out
+from .utilities import save_board, three_passes, passed_out, get_bidding_data
 
 
 def get_board_context(params, room, board) -> dict[str, str]:
@@ -37,9 +37,16 @@ def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
     if board.tricks and board.tricks[-1].suit:
         trick_suit = board.tricks[-1].suit.name
 
+    bidding_params = get_bidding_data(board)
+
     return {
         'dealer': board.dealer,
         'bid_history': board.bid_history,
+        # 'highest_level': highest_level,
+        # 'suppress_denoms': suppress_denoms,
+        'bidding_params': bidding_params,
+        'can_double': False,
+        'can_redouble': False,
         'board_number': board_number,
         'vulnerable': board.vulnerable,
         'suit_order': suit_order,

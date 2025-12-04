@@ -2,7 +2,8 @@
 import json
 from termcolor import cprint
 
-from bridgeobjects import SEATS, Trick
+
+from bridgeobjects import SEATS, Trick, Call, Denomination
 from bfgdealer import Board
 
 from .models import Room
@@ -143,3 +144,38 @@ def get_current_player(trick: Trick) -> str:
     leader_index = SEATS.index(trick.leader)
     current_player = (leader_index + len(trick.cards)) % 4
     return SEATS[current_player]
+
+
+def get_bidding_data(board: Board) -> tuple[str]:
+    """Return a levels and denoms to disable bid box buttons."""
+    call = _get_last_call(board)
+    return _get_suppress_list(call) if call else {}
+
+
+def _get_suppress_list(call: str) -> tuple:
+
+    denoms = []
+
+    for denom in Denomination.SHORT_NAMES:
+        denoms.append(denom)
+        if denom == call[1:]:
+            break
+
+    level = int(call[0])
+    if call[1:] == 'NT':
+        denoms = []
+        level += 1
+
+    return {
+        'level': level,
+        'suppress_denoms': denoms,
+        'can_double': False,
+        'can_redouble': False,
+    }
+
+
+def _get_last_call(board: Board) -> str:
+    for call in reversed(board.bid_history):
+        if Call(call).is_value_call:
+            return call
+    return ''

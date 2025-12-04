@@ -7,7 +7,7 @@ from bfgdealer import Board
 
 from .bidding_box import BiddingBox
 from .models import Room
-from .utilities import get_room_from_name, three_passes, passed_out
+from .utilities import get_room_from_name, three_passes, passed_out, get_bidding_data
 from .constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
 from .archive import get_pbn_string
 from .contexts import get_board_context
@@ -43,6 +43,8 @@ def bid_made_duo(params: dict[str, str]) -> dict[str, str]:
 
     (bb_names, bb_extra_names) = BiddingBox().refresh(board.bid_history,
                                                       add_warnings=True)
+    bidding_params = get_bidding_data(board)
+
     state_context = get_board_context(params, room, board)
     specific_context = {
         'bid_history': board.bid_history,
@@ -54,6 +56,7 @@ def bid_made_duo(params: dict[str, str]) -> dict[str, str]:
         'bid_box_extra_names': bb_extra_names,
         'board_pbn': get_pbn_string(board),
         'contract_target': 6 + board.contract.level,
+        'bidding_params': bidding_params,
     }
     return {**specific_context, **state_context}
 
@@ -72,6 +75,8 @@ def bid_made_solo(params: dict[str, str]) -> dict[str, str]:
     room.save()
 
     state_context = get_board_context(params, room, board)
+    bidding_params = get_bidding_data(board)
+
     specific_context = {
         'selected_bid': params.bid,
         'suggested_bid': suggested_bid.name,
@@ -80,6 +85,7 @@ def bid_made_solo(params: dict[str, str]) -> dict[str, str]:
         'strategy_text': strategy_text,
         'bid_made_text': YOUR_SELECTION_TEXT,
         'correct_bid_text': SUGGEST_BID_TEXT,
+        'bidding_params': bidding_params,
     }
     return {**specific_context, **state_context}
 
