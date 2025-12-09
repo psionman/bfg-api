@@ -149,10 +149,11 @@ def get_current_player(trick: Trick) -> str:
 def get_bidding_data(board: Board) -> tuple[str]:
     """Return a levels and denoms to disable bid box buttons."""
     call = _get_last_call(board)
-    return _get_suppress_list(call) if call else {}
+    return _get_suppress_list(board) if call else {}
 
 
-def _get_suppress_list(call: str) -> tuple:
+def _get_suppress_list(board: Board) -> tuple:
+    call = _get_last_call(board)
 
     denoms = []
 
@@ -166,11 +167,15 @@ def _get_suppress_list(call: str) -> tuple:
         denoms = []
         level += 1
 
+    calls = board.bid_history
+    can_double = _can_double(calls)
+    can_redouble = _can_redouble(calls)
+
     return {
         'level': level,
         'suppress_denoms': denoms,
-        'can_double': False,
-        'can_redouble': False,
+        'can_double': can_double,
+        'can_redouble': can_redouble,
     }
 
 
@@ -179,3 +184,28 @@ def _get_last_call(board: Board) -> str:
         if Call(call).is_value_call:
             return call
     return ''
+
+
+def _can_double(calls: list) -> bool:
+    if len(calls) >= 3:
+        if (Call(calls[-3]).is_value_call
+                and not Call(calls[-2]).is_redouble):
+            return True
+        elif Call(calls[-1]).is_value_call:
+            return True
+    elif len(calls) >= 1:
+        if Call(calls[-1]).is_value_call:
+            return True
+    return False
+
+
+def _can_redouble(calls: list) -> bool:
+    if len(calls) >= 3:
+        if (Call(calls[-3]).is_double
+                and Call(calls[-2]).is_pass
+                and Call(calls[-1]).is_pass):
+            return True
+    elif len(calls) >= 2:
+        if Call(calls[-1]).is_double:
+            return True
+    return False

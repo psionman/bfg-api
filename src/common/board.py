@@ -265,15 +265,29 @@ def update_trick_scores(board: Board, trick: Trick):
 def undo_context(params):
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
+    initial_state = False
 
     if board.contract.name:
         logger.info('Undo card play clicked', username=params.username, seat=params.seat)
         undo_cardplay(board, params.mode)
         board.current_player = get_current_player(board.tricks[-1])
     else:
-        _undo_bids(board, params)
+
+        new_bid_history = _undo_bids(board, params)
+        auction = get_initial_auction(params, board, [])
+
+        # Restore bod_history after "get_initial_auction()"
+        board.bid_history = new_bid_history
+
+        calls = [call.name for call in auction.calls]
+        if calls == board.bid_history:
+            initial_state = True
+
         logger.info('Undo bid clicked', username=params.username, seat=params.seat)
-    return get_board_context(params, room, board)
+
+    context = get_board_context(params, room, board)
+    context['initial_state'] = initial_state
+    return context
 
 
 def _undo_bids(board, params: dict) -> None:
@@ -289,5 +303,5 @@ def _undo_bids(board, params: dict) -> None:
     if bid_history:
         bid_history.pop(-1)
 
-    board.bid_history = list(bid_history) or [
+    return list(bid_history) or [
         call.name for call in get_initial_auction(params, board).calls]

@@ -130,6 +130,7 @@ def get_user_set_hands(params):
 
 def set_user_set_hands(params):
     room = get_room_from_name(params.room_name)
+    print(f'{params.set_hands=}')
     room.set_hands = json.dumps(params.set_hands)
     room.use_set_hands = params.use_set_hands
     room.display_hand_type = params.display_hand_type
