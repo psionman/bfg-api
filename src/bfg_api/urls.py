@@ -29,6 +29,8 @@ urlpatterns = [
 
     # Boards
     path('new-board/<str:params>/', views.NewBoard.as_view()),
+    path('restart-board/<str:params>/', views.RestartBoard.as_view()),
+    path('replay-board/<str:params>/', views.ReplayBoard.as_view()),
     path('room-board/<str:params>/', views.RoomBoard.as_view()),
     path('pbn-board/<str:params>/', views.PbnBoard.as_view()),
 
@@ -50,7 +52,6 @@ urlpatterns = [
     # Card play
     path('cardplay/<str:params>/', views.CardPlay.as_view()),
     path('card-played/<str:params>/', views.CardPlayed.as_view()),
-    path('replay-board/<str:params>/', views.ReplayBoard.as_view()),
     path('claim/<str:params>/', views.Claim.as_view()),
     path('compare-scores/<str:params>/', views.CompareScores.as_view()),
 

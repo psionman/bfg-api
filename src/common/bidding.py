@@ -16,10 +16,10 @@ logger = structlog.get_logger()
 
 
 def get_bid_made(params: dict[str, str]) -> dict[str, str]:
-    if params.bid == 'restart':
-        logger.info('Clicked restart board', username=params.username)
-        return _restart_board(params)
-    elif params.mode == 'duo':
+    # if params.bid == 'restart':
+    #     logger.info('Clicked restart board', username=params.username)
+    #     return _restart_board(params)
+    if params.mode == 'duo':
         return bid_made_duo(params)
     return bid_made_solo(params)
 
@@ -90,14 +90,14 @@ def bid_made_solo(params: dict[str, str]) -> dict[str, str]:
     return {**specific_context, **state_context}
 
 
-def _restart_board(params):
-    """Return the context for a restart board."""
-    room = get_room_from_name(params.room_name)
-    board = Board().from_json(room.board)
-    board.auction = Auction()
-    board.auction = get_initial_auction(params, board, [])
-    board.current_player = None
-    return get_board_context(params, room, board)
+# def _restart_board(params):
+#     """Return the context for a restart board."""
+#     room = get_room_from_name(params.room_name)
+#     board = Board().from_json(room.board)
+#     board.auction = Auction()
+#     board.auction = get_initial_auction(params, board, [])
+#     board.current_player = None
+#     return get_board_context(params, room, board)
 
 
 def _get_opps_bid(params: dict[str, str], board: Board) -> None:

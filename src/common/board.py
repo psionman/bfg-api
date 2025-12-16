@@ -44,6 +44,16 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
     return get_board_context(params, room, board)
 
 
+def restart_board_context(params):
+    """Return the context for a restart board."""
+    room = get_room_from_name(params.room_name)
+    board = Board().from_json(room.board)
+    board.auction = Auction()
+    board.auction = get_initial_auction(params, board, [])
+    board.current_player = None
+    return get_board_context(params, room, board)
+
+
 def _get_new_board(params: dict[str, str]) -> tuple[int, Board]:
     if not params.set_hands:
         return _get_random_board(params)

@@ -268,6 +268,14 @@ class CardPlayed(View):
         return JsonResponse(context, safe=False)
 
 
+class RestartBoard(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        context = app.restart_board(params)
+        return JsonResponse(context, safe=False)
+
+
 class ReplayBoard(View):
     @staticmethod
     def get(request, params):

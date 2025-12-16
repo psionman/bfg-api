@@ -14,7 +14,8 @@ from .archive import (get_history_boards_text, rotate_archived_boards,
                       save_boards_file_to_room, get_user_archive_list,
                       get_board_file_from_room)
 from .board import (get_new_board, get_history_board, get_board_from_pbn,
-                    undo_context, get_room_board)
+                    undo_context, get_room_board, restart_board_context)
+
 from .bidding import get_bid_made, get_bid_context
 from .cardplay import (get_cardplay_context, card_played_context,
                        replay_board_context, claim_context,
@@ -100,10 +101,15 @@ def card_played(params: dict[str, str]) -> dict[str, object]:
     return card_played_context(params)
 
 
+def restart_board(params: dict[str, str]) -> dict[str, object]:
+    """Return the context for resart board."""
+    logger.info('Clicked restart board', username=params.username)
+    return restart_board_context(params)
+
+
 def replay_board(params: dict[str, str]) -> dict[str, object]:
     """Return the context for replay board."""
     logger.info('Clicked replay board', username=params.username)
-    # log(params.username, 'replay board')
     return replay_board_context(params)
 
 
