@@ -102,7 +102,7 @@ def card_played(params: dict[str, str]) -> dict[str, object]:
 
 
 def restart_board(params: dict[str, str]) -> dict[str, object]:
-    """Return the context for resart board."""
+    """Return the context for restart board."""
     logger.info('Clicked restart board', username=params.username)
     return restart_board_context(params)
 

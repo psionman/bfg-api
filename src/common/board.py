@@ -2,7 +2,7 @@ import json
 import structlog
 
 from bfgcardplay import next_card
-from bridgeobjects import SEATS, VULNERABILITY, parse_pbn
+from bridgeobjects import SEATS, VULNERABILITY, parse_pbn, Auction
 from bfgdealer import DealerSolo, DealerDuo, Board, Trick
 
 from .bidding import get_initial_auction
