@@ -15,7 +15,7 @@ def get_board_context(params, room, board) -> dict[str, str]:
 
 def _board_context(params, room, board) -> dict[str, str]:
     bb_context = _get_bb_context(params.mode, board)
-    board_context = _get_board_context(board, room.board_number)
+    board_context = _get_board_context(board, room)
     return {**board_context, **bb_context}
 
 
@@ -29,16 +29,14 @@ def _get_bb_context(mode: str, board: Board) -> dict[str, str]:
     }
 
 
-def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
+def _get_board_context(board: Board, room: int) -> dict[str, object]:
     """Return a context with the current state of the board."""
     # The trick context cannot be set here (see card_played))
     suit_order = _get_suit_order(board)
     trick_suit = ''
     if board.tricks and board.tricks[-1].suit:
         trick_suit = board.tricks[-1].suit.name
-
     bidding_params = get_bidding_data(board)
-
     return {
         'dealer': board.dealer,
         'bid_history': board.bid_history,
@@ -47,7 +45,7 @@ def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
         'bidding_params': bidding_params,
         'can_double': False,
         'can_redouble': False,
-        'board_number': board_number,
+        'board_number': room.board_number,
         'vulnerable': board.vulnerable,
         'suit_order': suit_order,
         'hand_cards': _sort_hand_cards(board),
@@ -77,6 +75,7 @@ def _get_board_context(board: Board, board_number: int) -> dict[str, object]:
         'source': board.source,
         'identifier': board.identifier,
         'test': False,
+        'saved_pbn': room.saved_pbn,
     }
 
 

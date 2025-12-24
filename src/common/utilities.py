@@ -147,7 +147,7 @@ def get_current_player(trick: Trick) -> str:
 
 
 def get_bidding_data(board: Board) -> tuple[str]:
-    """Return a levels and denoms to disable bid box buttons."""
+    """Return levels and denoms to disable bid box buttons."""
     call = _get_last_call(board)
     return _get_suppress_list(board) if call else {}
 
@@ -187,25 +187,22 @@ def _get_last_call(board: Board) -> str:
 
 
 def _can_double(calls: list) -> bool:
-    if len(calls) >= 3:
-        if (Call(calls[-3]).is_value_call
-                and not Call(calls[-2]).is_redouble):
-            return True
-        elif Call(calls[-1]).is_value_call:
-            return True
-    elif len(calls) >= 1:
-        if Call(calls[-1]).is_value_call:
-            return True
+    if calls and Call(calls[-1]).is_value_call:
+        return True
+    if (len(calls) >= 3
+            and Call(calls[-3]).is_value_call
+            and Call(calls[-2]).is_pass
+            and Call(calls[-1]).is_pass):
+        return True
     return False
 
 
 def _can_redouble(calls: list) -> bool:
-    if len(calls) >= 3:
-        if (Call(calls[-3]).is_double
-                and Call(calls[-2]).is_pass
-                and Call(calls[-1]).is_pass):
-            return True
-    elif len(calls) >= 2:
-        if Call(calls[-1]).is_double:
-            return True
+    if calls and Call(calls[-1]).is_double:
+        return True
+    if (len(calls) >= 3
+            and Call(calls[-3]).is_double
+            and Call(calls[-2]).is_pass
+            and Call(calls[-1]).is_pass):
+        return True
     return False

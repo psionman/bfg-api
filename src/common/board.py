@@ -51,6 +51,11 @@ def restart_board_context(params):
     board.auction = Auction()
     board.auction = get_initial_auction(params, board, [])
     board.current_player = None
+    board.NS_tricks, board.EW_tricks = 0, 0
+    for hand in board.hands.values():
+        hand.unplayed_cards = list(hand.cards)
+    for trick in board.tricks:
+        trick.cards = []
     return get_board_context(params, room, board)
 
 
@@ -164,7 +169,7 @@ def _get_trick_details(board: Board) -> tuple[list[str], str, str]:
 
 def get_board_from_pbn(params):
     """Return board from a PBN string."""
-    room = get_room_from_name(params.room_name)
+    # room = get_room_from_name(params.room_name)
     board = _get_board_from_pbn_string(params)
     if not board:
         return {'error': 'Invalid pbn string'}
@@ -180,6 +185,8 @@ def get_board_from_pbn(params):
 
     trick_context = _trick_context_for_pbn_board(board)
     room = get_room_from_name(params.room_name)
+    room.saved_pbn = params.pbn_text
+    room.save()
     board_context = get_board_context(params, room, board)
     return {**board_context, **trick_context}
 

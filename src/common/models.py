@@ -18,6 +18,8 @@ class Room(models.Model):
     board = models.TextField(blank=True)
     archive = models.TextField(blank=True)
     saved_boards = models.TextField(blank=True, default=json.dumps([]))
+    saved_pbn = models.CharField(null=True, blank=True,
+                                 max_length=512, default='')
 
     def __str__(self):
         return f'Room({self.name} set_hands={self.set_hands})'
