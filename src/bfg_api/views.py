@@ -349,3 +349,19 @@ class Versions(View):
     def get(request):
         context = app.package_versions()
         return JsonResponse(context, safe=False)
+
+
+class MessageSent(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        context = app.message_sent(params)
+        return JsonResponse(context, safe=False)
+
+
+class MessageReceived(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        context = app.message_received(params)
+        return JsonResponse(context, safe=False)

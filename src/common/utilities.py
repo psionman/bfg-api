@@ -60,6 +60,7 @@ class Params():
         self.browser = self._update_attribute(params, 'browser', True)
         self.use_double_dummy = self._update_attribute(
             params, 'use_double_dummy', True)
+        self.message = self._update_attribute(params, 'message', {})
 
     @staticmethod
     def _update_attribute(params, attribute, default=None):

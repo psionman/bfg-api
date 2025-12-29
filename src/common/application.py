@@ -154,3 +154,17 @@ def package_versions():
     for package in PACKAGES:
         versions[package] = version(package)
     return versions
+
+
+def message_sent(params) -> None:
+    logger.info(
+        'Message sent',
+        username=params.username,
+        message=params.message)
+
+
+def message_received(params) -> None:
+    logger.info(
+        'Message received',
+        username=params.username,
+        message=params.message)
