@@ -1,8 +1,13 @@
 # History
 
+## Version 1.2.3 30 Dec 2025
+
+1. Add trick_cards to board_context
+
 ## Version 1.2.2 29 Dec 2025
 
 1. Log messages sent and received
+
 
 ## Version 1.2.1 28 Nov 2025
 
