@@ -59,6 +59,8 @@ urlpatterns = [
     path('undo/<str:params>/', views.Undo.as_view()),
     path('versions/', views.Versions.as_view()),
     path('get-parameters/<str:params>/', views.GetParameters.as_view()),
+    path('database-update/<str:params>/', views.DatabaseUpdate.as_view()),
+
 
     # Messages
     path('message-sent/<str:params>/', views.MessageSent.as_view()),

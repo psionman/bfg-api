@@ -61,12 +61,11 @@ class Params():
         self.use_double_dummy = self._update_attribute(
             params, 'use_double_dummy', True)
         self.message = self._update_attribute(params, 'message', {})
+        self.payload = self._update_attribute(params, 'payload', {})
 
     @staticmethod
     def _update_attribute(params, attribute, default=None):
-        if attribute in params:
-            return params[attribute]
-        return default
+        return params[attribute] if attribute in params else default
 
     def __repr__(self):
         return str(self.__dict__)
@@ -86,25 +85,23 @@ class UserProxy():
         return str(self.__dict__)
 
 
-def three_passes(bid_history: list[str]) -> bool:  # X
+def three_passes(bid_history: list[str]) -> bool:    # X
     """Return True if there are 3 passes."""
-    if len(bid_history) >= 4:
-        if (bid_history[-1] == 'P' and
-                bid_history[-2] == 'P' and
-                bid_history[-3] == 'P'):
-            return True
-    return False
+    return len(bid_history) >= 4 and (
+        bid_history[-1] == 'P'
+        and bid_history[-2] == 'P'
+        and bid_history[-3] == 'P'
+    )
 
 
-def passed_out(bid_history: list[str]) -> bool:  # X
+def passed_out(bid_history: list[str]) -> bool:    # X
     """Return True if there are 4 passes."""
-    if len(bid_history) == 4:
-        if (bid_history[0] == 'P' and
-                bid_history[1] == 'P' and
-                bid_history[2] == 'P' and
-                bid_history[3] == 'P'):
-            return True
-    return False
+    return len(bid_history) == 4 and (
+        bid_history[0] == 'P'
+        and bid_history[1] == 'P'
+        and bid_history[2] == 'P'
+        and bid_history[3] == 'P'
+    )
 
 
 def save_board(room: Room, board: Board) -> None:
@@ -117,15 +114,11 @@ def get_unplayed_cards_for_board_hands(board: Board) -> None:
     if _unplayed_cards_have_not_been_generated(board):
         for key, hand in board.hands.items():
             if not hand.unplayed_cards:
-                hand.unplayed_cards = [card for card in hand.cards]
+                hand.unplayed_cards = list(hand.cards)
 
 
 def _unplayed_cards_have_not_been_generated(board: Board) -> bool:
-    # Only generate unplayed cards if no hand has them.
-    for hand in board.hands.values():
-        if hand.unplayed_cards:
-            return False
-    return True
+    return not any(hand.unplayed_cards for hand in board.hands.values())
 
 
 def dict_print(context):
@@ -201,9 +194,11 @@ def _can_double(calls: list) -> bool:
 def _can_redouble(calls: list) -> bool:
     if calls and Call(calls[-1]).is_double:
         return True
-    if (len(calls) >= 3
+    return bool(
+        (
+            len(calls) >= 3
             and Call(calls[-3]).is_double
             and Call(calls[-2]).is_pass
-            and Call(calls[-1]).is_pass):
-        return True
-    return False
+            and Call(calls[-1]).is_pass
+        )
+    )

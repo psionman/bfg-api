@@ -190,7 +190,7 @@ def get_bid_context(params: dict[str, str],
     board = Board().from_json(room.board)
     bid = _update_bid_history(room, board, use_suggested_bid)
     logger.info(
-        'bid made', call=bid, username=params.username, seat=params.seat)
+        'bid-made', call=bid, username=params.username, seat=params.seat)
     _update_board_other_bids(board, params)
     room.board = board.to_json()
     room.save()
@@ -226,7 +226,7 @@ def _update_board_other_bids(board: Board, params: dict) -> None:
         other_seat = (seat_index + 1 + other) % 4
         bid = board.players[other_seat].make_bid()
         logger.info(
-            'bid made',
+            'bid-made',
             call=bid.name,
             username='system',
             seat=SEATS[other_seat])

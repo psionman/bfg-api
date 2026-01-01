@@ -63,7 +63,7 @@ def card_played_context(params: dict[str, str]) -> dict[str, object]:
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     logger.info(
-            'card played',
+            'card-played',
             card=params.card_played,
             username=params.card_player,
             seat=board.current_player)
@@ -192,7 +192,7 @@ def claim_context(params):
     }
 
     logger.info(
-        'Claim made',
+        'claim',
         username=params.username,
         tricks=params.claim_tricks,
         accepted=accepted)

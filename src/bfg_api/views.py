@@ -12,16 +12,13 @@ import common.application as app
 from common.serializers import RoomSerializer
 from common.utilities import Params
 
-logger = structlog.get_logger()
-
 
 class UserLogin(View):
     @staticmethod
     def get(request, params):
         params = Params(params)
-        ip_address = request.META.get('REMOTE_ADDR')
-        logger.info(
-            'User logged in', username=params.username, ip_address=ip_address)
+        app.user_login(params, request.META.get('REMOTE_ADDR'))
+
         return JsonResponse({}, safe=False)
 
 
@@ -29,9 +26,7 @@ class UserLogout(View):
     @staticmethod
     def get(request, params):
         params = Params(params)
-        ip_address = request.META.get('REMOTE_ADDR')
-        logger.info(
-            'User logged out', username=params.username, ip_address=ip_address)
+        app.user_logout(params, request.META.get('REMOTE_ADDR'))
         return JsonResponse({}, safe=False)
 
 
@@ -39,19 +34,15 @@ class UserSeat(View):
     @staticmethod
     def get(request, params):
         params = Params(params)
-        logger.info(
-            'User seat allocate.', username=params.username, seat=params.seat)
+        app.seat_assigned(params)
         return JsonResponse({}, safe=False)
 
 
 class StaticData(View):
     @staticmethod
     def get(request, params):
-        ip_address = request.META.get('REMOTE_ADDR')
-        logger.info(
-            'Access static data', ip_address=ip_address)
         params = Params(params)
-        context = app.static_data()
+        context = app.static_data(request.META.get('REMOTE_ADDR'))
         return JsonResponse(context, safe=False)
 
 
@@ -364,4 +355,12 @@ class MessageReceived(View):
     def get(request, params):
         params = Params(params)
         context = app.message_received(params)
+        return JsonResponse(context, safe=False)
+
+
+class DatabaseUpdate(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        context = app.database_update(params)
         return JsonResponse(context, safe=False)

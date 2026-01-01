@@ -26,8 +26,9 @@ from _version import __version__ as api_version
 logger = structlog.get_logger()
 
 
-def static_data() -> dict[str, object]:
+def static_data(ip_address: str) -> dict[str, object]:
     """Return a dict of static data."""
+    logger.info('Static data', ip_address=ip_address)
     context = {
         'card_images': CARD_IMAGES,
         'call_images': CALL_IMAGES,
@@ -51,24 +52,24 @@ def room_board(params: dict[str, str]) -> dict[str, object]:
     return get_room_board(params)
 
 
-def board_from_pbn(params):
+def board_from_pbn(params: dict):
     """Return board from a PBN string."""
     return get_board_from_pbn(params)
 
 
-def get_history(params):
+def get_history(params: dict):
     return get_history_boards_text(params)
 
 
-def save_board_file(params):
+def save_board_file(params: dict):
     return save_boards_file_to_room(params)
 
 
-def get_archive_list(params):
+def get_archive_list(params: dict):
     return get_user_archive_list(params)
 
 
-def get_board_file(params):
+def get_board_file(params: dict):
     return get_board_file_from_room(params)
 
 
@@ -103,29 +104,29 @@ def card_played(params: dict[str, str]) -> dict[str, object]:
 
 def restart_board(params: dict[str, str]) -> dict[str, object]:
     """Return the context for restart board."""
-    logger.info('Clicked restart board', username=params.username)
+    logger.info('restart-board', username=params.username)
     return restart_board_context(params)
 
 
 def replay_board(params: dict[str, str]) -> dict[str, object]:
     """Return the context for replay board."""
-    logger.info('Clicked replay board', username=params.username)
+    logger.info('replay-board', username=params.username)
     return replay_board_context(params)
 
 
-def claim(params):
+def claim(params: dict):
     return claim_context(params)
 
 
-def compare_scores(params):
+def compare_scores(params: dict):
     return compare_scores_context(params)
 
 
-def undo(params):
+def undo(params: dict):
     return undo_context(params)
 
 
-def get_user_set_hands(params):
+def get_user_set_hands(params: dict):
     room = get_room_from_name(params.room_name)
     return {
         'set_hands': json.loads(room.set_hands),
@@ -134,7 +135,7 @@ def get_user_set_hands(params):
     }
 
 
-def set_user_set_hands(params):
+def set_user_set_hands(params: dict):
     room = get_room_from_name(params.room_name)
     print(f'{params.set_hands=}')
     room.set_hands = json.dumps(params.set_hands)
@@ -142,7 +143,7 @@ def set_user_set_hands(params):
     room.display_hand_type = params.display_hand_type
     room.save()
     logger.info(
-        'Update set hands',
+        'update-set-hands',
         username=params.username,
         set_hands=params.set_hands)
 
@@ -156,15 +157,41 @@ def package_versions():
     return versions
 
 
-def message_sent(params) -> None:
+def message_sent(params: dict) -> None:
     logger.info(
-        'Message sent',
+        'message-sent',
         username=params.username,
         message=params.message)
+    return None
 
 
-def message_received(params) -> None:
+def message_received(params: dict) -> None:
     logger.info(
-        'Message received',
+        'message-received',
         username=params.username,
         message=params.message)
+    return None
+
+
+def database_update(params: dict) -> None:
+    logger.info(
+        'database-update',
+        username=params.username,
+        payload=params.payload)
+    return None
+
+
+def user_login(params: dict, ip_address: str) -> None:
+    logger.info(
+        'login', username=params.username, ip_address=ip_address)
+    return None
+
+
+def user_logout(params: dict, ip_address: str) -> None:
+    logger.info('logout', username=params.username, ip_address=ip_address)
+    return None
+
+
+def seat_assigned(params: dict) -> None:
+    logger.info('seat-assigned', username=params.username, seat=params.seat)
+    return None

@@ -25,7 +25,7 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
     board.dealer = SEATS[(room.board_number - 1) % 4]
 
     logger.info(
-        'New board',
+        'new-board',
         username=params.username,
         pbn=board.create_pbn_list()
         )
@@ -35,7 +35,7 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
     seat_index = SEATS.index(board.dealer)
     for call in board.auction.calls:
         logger.info(
-            'bid made',
+            'bid-made',
             call=call.name,
             username='system',
             seat=SEATS[seat_index])
@@ -141,7 +141,7 @@ def get_history_board(params) -> Board:
 
     # board.display_stats()
     logger.info(
-        'Board from history',
+        'history-board',
         username=params.username,
         pbn=board.create_pbn_list())
 
@@ -178,7 +178,7 @@ def get_board_from_pbn(params):
     get_unplayed_cards_for_board_hands(board)
     # board.display_stats()
     logger.info(
-        'Board from pbn',
+        'pbn-board',
         username=params.username,
         pbn=board.create_pbn_list()
     )
@@ -238,8 +238,6 @@ def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
         pbn_list.extend(item.strip() for item in pbn_list_raw)
     if not pbn_list:
         return None
-    logger.info(
-        'Board from pbn', username=params.username, board=pbn_list)
     try:
         raw_board = parse_pbn(pbn_list)[0].boards[0]
     except (ValueError, IndexError):
@@ -285,11 +283,10 @@ def undo_context(params):
     initial_state = False
 
     if board.contract.name:
-        logger.info('Undo card play clicked', username=params.username, seat=params.seat)
+        logger.info('undo-card', username=params.username)
         undo_cardplay(board, params.mode)
         board.current_player = get_current_player(board.tricks[-1])
     else:
-
         new_bid_history = _undo_bids(board, params)
         auction = get_initial_auction(params, board, [])
 
@@ -300,7 +297,7 @@ def undo_context(params):
         if calls == board.bid_history:
             initial_state = True
 
-        logger.info('Undo bid clicked', username=params.username, seat=params.seat)
+        logger.info('undo-bid', username=params.username)
 
     context = get_board_context(params, room, board)
     context['initial_state'] = initial_state
