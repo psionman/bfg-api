@@ -23,3 +23,9 @@ class Room(models.Model):
 
     def __str__(self):
         return f'Room({self.name} set_hands={self.set_hands})'
+
+
+class User(models.Model):
+    username = models.CharField(max_length=32)
+    logged_in = models.BooleanField(default=False)
+    last_activity = models.DateTimeField(null=True)

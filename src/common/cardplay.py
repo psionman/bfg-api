@@ -6,7 +6,7 @@ from bfgdealer import Board, Trick
 from bfgcardplay import next_card
 
 from .utilities import (get_room_from_name, passed_out, save_board,
-                        get_current_player)
+                        get_current_player, update_user_activity)
 from .contexts import get_board_context
 from .board import update_trick_scores
 
@@ -67,6 +67,7 @@ def card_played_context(params: dict[str, str]) -> dict[str, object]:
             card=params.card_played,
             username=params.card_player,
             seat=board.current_player)
+    update_user_activity(params)
 
     # This section here in case a complete trick is presented by PBN
     winner = _complete_trick(board, False)

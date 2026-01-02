@@ -1,18 +1,29 @@
 """Helper classes for BfG."""
 import json
+from datetime import datetime, timezone
 from termcolor import cprint
 
 
 from bridgeobjects import SEATS, Trick, Call, Denomination
 from bfgdealer import Board
 
-from .models import Room
+from .models import Room, User
 
 MODULE_COLOUR = 'blue'
 
 
 def get_room_from_name(name: str) -> Room:
     return Room.objects.get_or_create(name=name)[0]
+
+
+def get_user_from_username(username: str) -> User:
+    return User.objects.get_or_create(username=username)[0]
+
+
+def update_user_activity(params: dict) -> None:
+    user = get_user_from_username(params.username)
+    user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
+    user.save()
 
 
 class Params():
@@ -62,6 +73,7 @@ class Params():
             params, 'use_double_dummy', True)
         self.message = self._update_attribute(params, 'message', {})
         self.payload = self._update_attribute(params, 'payload', {})
+        self.user_query = self._update_attribute(params, 'user_query', '')
 
     @staticmethod
     def _update_attribute(params, attribute, default=None):

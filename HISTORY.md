@@ -1,5 +1,10 @@
 # History
 
+## Version 1.2.4 2 January 2026
+
+1. Rationalise logger objects
+2. Add User to models
+
 ## Version 1.2.3 30 Dec 2025
 
 1. Add trick_cards to board_context

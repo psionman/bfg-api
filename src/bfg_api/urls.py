@@ -18,6 +18,7 @@ urlpatterns = [
     path('user-login/<str:params>/', views.UserLogin.as_view()),
     path('user-seat/<str:params>/', views.UserSeat.as_view()),
     path('user-logout/<str:params>/', views.UserLogout.as_view()),
+    path('user-status/<str:params>/', views.UserStatus.as_view()),
 
     # REST api
     path('api', views.RoomListApiView.as_view()),

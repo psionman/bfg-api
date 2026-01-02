@@ -3,12 +3,14 @@
 from importlib.metadata import version
 import json
 import structlog
+from datetime import timedelta
+from django.utils import timezone
 
 from bridgeobjects import CALLS
 from bfgdealer import Board, SOLO_SET_HANDS, DUO_SET_HANDS
 
 from .constants import PACKAGES
-from .utilities import get_room_from_name
+from .utilities import get_room_from_name, update_user_activity
 from .images import CURSOR, CALL_IMAGES, CARD_IMAGES
 from .archive import (get_history_boards_text, rotate_archived_boards,
                       save_boards_file_to_room, get_user_archive_list,
@@ -22,6 +24,8 @@ from .cardplay import (get_cardplay_context, card_played_context,
                        compare_scores_context)
 from .constants import SOURCES
 from _version import __version__ as api_version
+from .utilities import get_user_from_username
+from .models import User
 
 logger = structlog.get_logger()
 
@@ -105,12 +109,14 @@ def card_played(params: dict[str, str]) -> dict[str, object]:
 def restart_board(params: dict[str, str]) -> dict[str, object]:
     """Return the context for restart board."""
     logger.info('restart-board', username=params.username)
+    update_user_activity(params)
     return restart_board_context(params)
 
 
 def replay_board(params: dict[str, str]) -> dict[str, object]:
     """Return the context for replay board."""
     logger.info('replay-board', username=params.username)
+    update_user_activity(params)
     return replay_board_context(params)
 
 
@@ -142,6 +148,7 @@ def set_user_set_hands(params: dict):
     room.use_set_hands = params.use_set_hands
     room.display_hand_type = params.display_hand_type
     room.save()
+    update_user_activity(params)
     logger.info(
         'update-set-hands',
         username=params.username,
@@ -178,18 +185,50 @@ def database_update(params: dict) -> None:
         'database-update',
         username=params.username,
         payload=params.payload)
+    update_user_activity(params)
     return None
 
 
 def user_login(params: dict, ip_address: str) -> None:
+    user = get_user_from_username(params.username)
+    user.logged_in = True
+    user.save()
+    update_user_activity(params)
     logger.info(
         'login', username=params.username, ip_address=ip_address)
     return None
 
 
 def user_logout(params: dict, ip_address: str) -> None:
+    user = get_user_from_username(params.username)
+    user.logged_in = False
+    user.save()
+    update_user_activity(params)
     logger.info('logout', username=params.username, ip_address=ip_address)
     return None
+
+
+def get_user_status(params) -> dict:
+    user = get_user_from_username(params.user_query)
+
+    last_activity_iso = None
+    if user.last_activity:
+        time_diff = abs(timezone.now() - user.last_activity)
+        if time_diff > timedelta(hours=1):
+            user.logged_in = False
+            user.save()
+
+        last_activity_iso = (
+            user.last_activity
+            .replace(microsecond=(user.last_activity.microsecond // 1000) * 1000)  # milliseconds only
+            .isoformat()
+            .replace('+00:00', 'Z')  # if it's UTC-aware
+        )
+
+    return {
+        'logged_in': user.logged_in,
+        'last_activity': last_activity_iso,
+    }
 
 
 def seat_assigned(params: dict) -> None:

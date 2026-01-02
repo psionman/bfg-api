@@ -7,11 +7,12 @@ from bfgdealer import DealerSolo, DealerDuo, Board, Trick
 
 from .bidding import get_initial_auction
 from .utilities import (get_unplayed_cards_for_board_hands, get_room_from_name,
-                        passed_out, get_current_player)
+                        passed_out, get_current_player, update_user_activity)
 from .contexts import get_board_context, get_pbn_string
 from .constants import SOURCES, CONTRACT_BASE
 from .archive import save_board_to_archive, get_board_from_archive
 from .undo_cardplay import undo_cardplay
+
 
 logger = structlog.get_logger()
 
@@ -23,7 +24,7 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
     board = _get_new_board(params)
     board.vulnerable = VULNERABILITY[room.board_number % 16]
     board.dealer = SEATS[(room.board_number - 1) % 4]
-
+    update_user_activity(params)
     logger.info(
         'new-board',
         username=params.username,
@@ -148,7 +149,7 @@ def get_history_board(params) -> Board:
     board.auction = get_initial_auction(params, board, [])
     pbn_string = get_pbn_string(board)
     board.source = SOURCES['history']
-    # logger.info('Get archive board', username=params.username, board=pbn_string)
+    update_user_activity(params)
     return get_board_context(params, room, board)
 
 
@@ -187,6 +188,7 @@ def get_board_from_pbn(params):
     room = get_room_from_name(params.room_name)
     room.saved_pbn = params.pbn_text
     room.save()
+    update_user_activity(params)
     board_context = get_board_context(params, room, board)
     return {**board_context, **trick_context}
 
@@ -281,6 +283,7 @@ def undo_context(params):
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     initial_state = False
+    update_user_activity(params)
 
     if board.contract.name:
         logger.info('undo-card', username=params.username)

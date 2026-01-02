@@ -7,7 +7,9 @@ from bfgdealer import Board
 
 from .bidding_box import BiddingBox
 from .models import Room
-from .utilities import get_room_from_name, three_passes, passed_out, get_bidding_data
+from .utilities import (
+    get_room_from_name, three_passes, passed_out, get_bidding_data,
+    update_user_activity)
 from .constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
 from .archive import get_pbn_string
 from .contexts import get_board_context
@@ -191,6 +193,7 @@ def get_bid_context(params: dict[str, str],
     bid = _update_bid_history(room, board, use_suggested_bid)
     logger.info(
         'bid-made', call=bid, username=params.username, seat=params.seat)
+    update_user_activity(params)
     _update_board_other_bids(board, params)
     room.board = board.to_json()
     room.save()

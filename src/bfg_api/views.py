@@ -1,5 +1,4 @@
 import json
-import structlog
 
 from django.views import View
 from django.http import JsonResponse
@@ -363,4 +362,12 @@ class DatabaseUpdate(View):
     def get(request, params):
         params = Params(params)
         context = app.database_update(params)
+        return JsonResponse(context, safe=False)
+
+
+class UserStatus(View):
+    @staticmethod
+    def get(request, params):
+        params = Params(params)
+        context = app.get_user_status(params)
         return JsonResponse(context, safe=False)
