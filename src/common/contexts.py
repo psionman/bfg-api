@@ -37,7 +37,6 @@ def _get_board_context(board: Board, room: int) -> dict[str, object]:
     if board.tricks and board.tricks[-1].suit:
         trick_suit = board.tricks[-1].suit.name
     bidding_params = get_bidding_data(board)
-
     return {
         'dealer': board.dealer,
         'bid_history': board.bid_history,

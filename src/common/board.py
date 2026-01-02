@@ -49,6 +49,7 @@ def restart_board_context(params):
     """Return the context for a restart board."""
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
+    board.tricks =[Trick()]
     board.auction = Auction()
     board.auction = get_initial_auction(params, board, [])
     board.current_player = None
