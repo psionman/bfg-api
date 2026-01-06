@@ -28,56 +28,92 @@ def update_user_activity(params: dict) -> None:
 
 class Params():
     def __init__(self, raw_params):
-        # raw_params = unquote(raw_params)
         params = json.loads(raw_params)
-        self.username = self._update_attribute(params, 'username')
-        self.partner_username = self._update_attribute(params,
-                                                       'partner_username')
-        self.board_id = self._update_attribute(params, 'board_id')
-        self.seat = self._update_attribute(params, 'seat', 'N')
-        self.room_name = self._update_attribute(params, 'room_name')
-        self.bid = self._update_attribute(params, 'bid')
-        self.generate_contract = self._update_attribute(params,
-                                                        'generate_contract',
-                                                        False)
-        self.set_hands = self._update_attribute(params, 'set_hands', [])
-        self.display_hand_type = self._update_attribute(params,
-                                                        'display_hand_type',
-                                                        False)
-        self.use_set_hands = self._update_attribute(params,
-                                                    'use_set_hands', False)
-        self.file_name = self._update_attribute(params, 'file_name')
-        self.mode = self._update_attribute(params, 'mode')
-        self.card_played = self._update_attribute(params, 'card_played')
-        self.card_player = self._update_attribute(params, 'card_player')
-        self.board_number = self._update_attribute(params, 'board_number')
-        self.rotation_seat = self._update_attribute(params, 'rotation_seat')
-        self.dealer = self._update_attribute(params, 'dealer')
-        self.claim_tricks = self._update_attribute(params, 'claim_tricks', 0)
-        self.display_hand_type = self._update_attribute(params,
-                                                        'display_hand_type')
-        self.NS_tricks = self._update_attribute(params, 'NS_tricks', 0)
-        self.EW_tricks = self._update_attribute(params, 'EW_tricks', 0)
-        self.tester = self._update_attribute(params, 'tester', False)
-        self.file_description = self._update_attribute(params,
-                                                       'file_description')
-        self.file_name = self._update_attribute(params, 'file_name')
-        self.archive_name = self._update_attribute(params, 'archive_name')
-        self.pbn_text = self._update_attribute(params, 'pbn_text', '')
-        self.pbn_text_length = self._update_attribute(params,
-                                                      'pbn_text_length', 0)
+
+        self.username = params.get('username', '')
+        self.partner_username = params.get('partner_username', '')
+        self.board_id = params.get('board_id', '')
+        self.seat = params.get('seat', 'N')
+        self.room_name = params.get('room_name', '')
+        self.bid = params.get('bid', '')
+        self.generate_contract = params.get('generate_contract', False)
+        self.set_hands = params.get('set_hands', [])
+        self.display_hand_type = params.get('display_hand_type', False)
+        self.use_set_hands = params.get('use_set_hands', False)
+        self.mode = params.get('mode', '')
+        self.card_played = params.get('card_played', '')
+        self.card_player = params.get('card_player', '')
+        self.board_number = params.get('board_number', '')
+        self.rotation_seat = params.get('rotation_seat', '')
+        self.dealer = params.get('dealer', '')
+        self.claim_tricks = params.get('claim_tricks', 0)
+        self.NS_tricks = params.get('NS_tricks', 0)
+        self.EW_tricks = params.get('EW_tricks', 0)
+        self.tester = params.get('tester', False)
+        self.file_name = params.get('file_name', '')
+        self.file_description = params.get('file_description', '')
+        self.archive_name = params.get('archive_name', '')
+        self.pbn_text = params.get('pbn_text', '')
+        self.pbn_text_length = params.get('file_description', 0)
+        self.browser = params.get('browser', True)
+        self.use_double_dummy = params.get('use_double_dummy', True)
+        self.message = params.get('message', {})
+        self.payload = params.get('payload', {})
+        self.user_query = params.get('user_query', '')
 
         self.seat_index = SEATS.index(self.seat)
-        self.browser = self._update_attribute(params, 'browser', True)
-        self.use_double_dummy = self._update_attribute(
-            params, 'use_double_dummy', True)
-        self.message = self._update_attribute(params, 'message', {})
-        self.payload = self._update_attribute(params, 'payload', {})
-        self.user_query = self._update_attribute(params, 'user_query', '')
 
-    @staticmethod
-    def _update_attribute(params, attribute, default=None):
-        return params[attribute] if attribute in params else default
+        # # raw_params = unquote(raw_params)
+        # params = json.loads(raw_params)
+        # self.username = params.get('username')
+        # self.username = self._update_attribute(params, 'username')
+        # self.partner_username = self._update_attribute(params,
+        #                                                'partner_username')
+        # self.board_id = self._update_attribute(params, 'board_id')
+        # self.seat = self._update_attribute(params, 'seat', 'N')
+        # self.room_name = self._update_attribute(params, 'room_name')
+        # self.bid = self._update_attribute(params, 'bid')
+        # self.generate_contract = self._update_attribute(params,
+        #                                                 'generate_contract',
+        #                                                 False)
+        # self.set_hands = self._update_attribute(params, 'set_hands', [])
+        # self.display_hand_type = self._update_attribute(params,
+        #                                                 'display_hand_type',
+        #                                                 False)
+        # self.use_set_hands = self._update_attribute(params,
+        #                                             'use_set_hands', False)
+        # self.file_name = self._update_attribute(params, 'file_name')
+        # self.mode = self._update_attribute(params, 'mode')
+        # self.card_played = self._update_attribute(params, 'card_played')
+        # self.card_player = self._update_attribute(params, 'card_player')
+        # self.board_number = self._update_attribute(params, 'board_number')
+        # self.rotation_seat = self._update_attribute(params, 'rotation_seat')
+        # self.dealer = self._update_attribute(params, 'dealer')
+        # self.claim_tricks = self._update_attribute(params, 'claim_tricks', 0)
+        # self.display_hand_type = self._update_attribute(params,
+                                                        # 'display_hand_type')
+        # self.NS_tricks = self._update_attribute(params, 'NS_tricks', 0)
+        # self.EW_tricks = self._update_attribute(params, 'EW_tricks', 0)
+        # self.tester = self._update_attribute(params, 'tester', False)
+        # self.file_description = self._update_attribute(params,
+        #                                                'file_description')
+        # self.file_name = self._update_attribute(params, 'file_name')
+        # self.archive_name = self._update_attribute(params, 'archive_name')
+        # self.pbn_text = self._update_attribute(params, 'pbn_text', '')
+        # self.pbn_text_length = self._update_attribute(params,
+        #                                               'pbn_text_length', 0)
+
+        # self.seat_index = SEATS.index(self.seat)
+        # self.browser = self._update_attribute(params, 'browser', True)
+        # self.use_double_dummy = self._update_attribute(
+        #     params, 'use_double_dummy', True)
+        # self.message = self._update_attribute(params, 'message', {})
+        # self.payload = self._update_attribute(params, 'payload', {})
+        # self.user_query = self._update_attribute(params, 'user_query', '')
+
+    # @staticmethod
+    # def _update_attribute(params, attribute, default=None):
+    #     return params[attribute] if attribute in params else default
 
     def __repr__(self):
         return str(self.__dict__)
