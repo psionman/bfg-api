@@ -29,8 +29,8 @@ req = {
     'rotation_seat': None,
     'dealer': None,
     'claim_tricks': 0,
-    'NS_tricks': 0,
-    'EW_tricks': 0,
+    'ns_tricks': 0,
+    'ew_tricks': 0,
     'tester': True,
     'seat_index': 0,
 }

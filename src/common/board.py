@@ -87,7 +87,7 @@ def restart_board_context(req) -> dict:
     board.auction = Auction()
     board.auction = get_initial_auction(req, board, [])
     board.current_player = None
-    board.NS_tricks, board.EW_tricks = 0, 0
+    board.ns_tricks, board.ew_tricks = 0, 0
     for hand in board.hands.values():
         hand.unplayed_cards = list(hand.cards)
     for trick in board.tricks:
@@ -125,7 +125,7 @@ def _get_set_hand(req: GameRequest) -> tuple[Board, int]:
     return board
 
 
-def _get_dealer_engine(req: dict[str, object],
+def _get_dealer_engine(req: GameRequest,
                        board_number: int) -> tuple[object, str]:
     """
     Return the dealer engine and dealer seat for a board.
@@ -375,9 +375,9 @@ def update_trick_scores(board: Board, trick: Trick):
     if not trick.winner:
         return
     if trick.winner in 'NS':
-        board.NS_tricks += 1
+        board.ns_tricks += 1
     elif trick.winner in 'EW':
-        board.EW_tricks += 1
+        board.ew_tricks += 1
 
 
 def undo_context(req):
@@ -413,7 +413,7 @@ def undo_context(req):
     return context
 
 
-def _undo_bids(board, req: dict) -> None:
+def _undo_bids(board, req: GameRequest) -> None:
     """
     Undo a sequence of bids until reaching the specified bidder seat.
 

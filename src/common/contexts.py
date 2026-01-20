@@ -61,8 +61,8 @@ def _get_board_context(board: Board, room: int) -> dict[str, object]:
         'trick_count': len(board.tricks),
         'trick_cards': [card.name for card in board.tricks[-1].cards],
         'trick_suit': trick_suit,
-        'NS_tricks': board.NS_tricks,
-        'EW_tricks': board.EW_tricks,
+        'ns_tricks': board.ns_tricks,
+        'ew_tricks': board.ew_tricks,
         'score': _get_score(board),
         'dummy': _get_dummy_seat(board),
         'board_pbn': get_pbn_string(board),
@@ -167,7 +167,7 @@ def _get_previous_player(board: Board) -> str:
 
 
 def _get_score(board: Board) -> int:
-    if board.NS_tricks + board.EW_tricks == 13:
+    if board.ns_tricks + board.ew_tricks == 13:
         return _calculate_score(board)
     return 0
 
@@ -189,11 +189,11 @@ def _calculate_score(board: Board) -> int:
     """Return the score for the board."""
     vulnerable = False
     if board.contract.declarer in 'NS':
-        declarers_tricks = board.NS_tricks
+        declarers_tricks = board.ns_tricks
         if board.vulnerable in ['NS', 'Both', 'All']:
             vulnerable = True
     else:
-        declarers_tricks = board.EW_tricks
+        declarers_tricks = board.ew_tricks
         if board.vulnerable in ['EW', 'Both', 'All']:
             vulnerable = True
     return board.contract.score(declarers_tricks, vulnerable)

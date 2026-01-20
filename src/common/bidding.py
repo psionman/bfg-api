@@ -262,7 +262,7 @@ def _update_bid_history(room: Room, board: Board, use_suggested_bid: bool):
     return bid
 
 
-def _update_board_other_bids(board: Board, req: dict) -> None:
+def _update_board_other_bids(board: Board, req: GameRequest) -> None:
     """
     Simulate bids for other players on the board after a player's bid.
 

@@ -30,8 +30,8 @@ class GameRequest:
     rotation_seat: str = ""
     dealer: str = ""
     claim_tricks: int = 0
-    NS_tricks: int = 0
-    EW_tricks: int = 0
+    ns_tricks: int = 0
+    ew_tricks: int = 0
     tester: bool = False
     file_name: str = ""
     file_description: str = ""
@@ -75,8 +75,8 @@ def req_from_json(raw_params: str) -> GameRequest:
         rotation_seat=data.get("rotation_seat", ""),
         dealer=data.get("dealer", ""),
         claim_tricks=int(data.get("claim_tricks", 0)),
-        NS_tricks=int(data.get("NS_tricks", 0)),
-        EW_tricks=int(data.get("EW_tricks", 0)),
+        ns_tricks=int(data.get("ns_tricks", 0)),
+        ew_tricks=int(data.get("ew_tricks", 0)),
         tester=bool(data.get("tester", False)),
         file_name=data.get("file_name", ""),
         file_description=data.get("file_description", ""),
@@ -112,7 +112,7 @@ def get_user_from_username(username: str) -> User:
     return User.objects.get_or_create(username=username)[0]
 
 
-def update_user_activity(req: dict) -> None:
+def update_user_activity(req: GameRequest) -> None:
     user = get_user_from_username(req.username)
     user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
     user.save()

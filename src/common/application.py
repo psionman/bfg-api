@@ -57,24 +57,24 @@ def room_board(req: GameRequest) -> dict[str, object]:
     return get_room_board(req)
 
 
-def board_from_pbn(req: dict):
+def board_from_pbn(req: GameRequest):
     """Return board from a PBN string."""
     return get_board_from_pbn(req)
 
 
-def get_history(req: dict):
+def get_history(req: GameRequest):
     return get_history_boards_text(req)
 
 
-def save_board_file(req: dict):
+def save_board_file(req: GameRequest):
     return save_boards_file_to_room(req)
 
 
-def get_archive_list(req: dict):
+def get_archive_list(req: GameRequest):
     return get_user_archive_list(req)
 
 
-def get_board_file(req: dict):
+def get_board_file(req: GameRequest):
     return get_board_file_from_room(req)
 
 
@@ -121,19 +121,19 @@ def replay_board(req: GameRequest) -> dict[str, object]:
     return replay_board_context(req)
 
 
-def claim(req: dict):
+def claim(req: GameRequest):
     return claim_context(req)
 
 
-def compare_scores(req: dict):
+def compare_scores(req: GameRequest):
     return compare_scores_context(req)
 
 
-def undo(req: dict):
+def undo(req: GameRequest):
     return undo_context(req)
 
 
-def get_user_set_hands(req: dict):
+def get_user_set_hands(req: GameRequest):
     room = get_room_from_name(req.room_name)
     return {
         'set_hands': json.loads(room.set_hands),
@@ -142,9 +142,8 @@ def get_user_set_hands(req: dict):
     }
 
 
-def set_user_set_hands(req: dict):
+def set_user_set_hands(req: GameRequest):
     room = get_room_from_name(req.room_name)
-    print(f'{req.set_hands=}')
     room.set_hands = json.dumps(req.set_hands)
     room.use_set_hands = req.use_set_hands
     room.display_hand_type = req.display_hand_type
@@ -165,7 +164,7 @@ def package_versions():
     return versions
 
 
-def message_sent(req: dict) -> None:
+def message_sent(req: GameRequest) -> None:
     logger.info(
         'message-sent',
         username=req.username,
@@ -173,7 +172,7 @@ def message_sent(req: dict) -> None:
     return None
 
 
-def message_received(req: dict) -> None:
+def message_received(req: GameRequest) -> None:
     logger.info(
         'message-received',
         username=req.username,
@@ -181,7 +180,7 @@ def message_received(req: dict) -> None:
     return None
 
 
-def database_update(req: dict) -> None:
+def database_update(req: GameRequest) -> None:
     # logger.info(
     #     'database-update',
     #     username=req.username,
@@ -190,7 +189,7 @@ def database_update(req: dict) -> None:
     return None
 
 
-def user_login(req: dict, ip_address: str) -> None:
+def user_login(req: GameRequest, ip_address: str) -> None:
     user = get_user_from_username(req.username)
     user.logged_in = True
     user.save()
@@ -200,7 +199,7 @@ def user_login(req: dict, ip_address: str) -> None:
     return None
 
 
-def user_logout(req: dict, ip_address: str) -> None:
+def user_logout(req: GameRequest, ip_address: str) -> None:
     user = get_user_from_username(req.username)
     user.logged_in = False
     user.save()
@@ -232,6 +231,6 @@ def get_user_status(req) -> dict:
     }
 
 
-def seat_assigned(req: dict) -> None:
+def seat_assigned(req: GameRequest) -> None:
     logger.info('seat-assigned', username=req.username, seat=req.seat)
     return None

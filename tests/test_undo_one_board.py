@@ -32,8 +32,8 @@ BOARD_PARAMS = {
     'rotation_seat': None,
     'dealer': None,
     'claim_tricks': 0,
-    'NS_tricks': 0,
-    'EW_tricks': 0,
+    'ns_tricks': 0,
+    'ew_tricks': 0,
     'tester': True,
     'seat_index': 0,
 }
@@ -97,11 +97,11 @@ def test_undo_solo_NS_declarer_EW_leader_only_one_card_in_trick():
     assert Card('6C') not in board.hands['N'].unplayed_cards
     assert Card('2C') not in board.hands['W'].unplayed_cards
     assert Card('KC') not in board.hands['E'].unplayed_cards
-    Board.NS_tricks = 2
-    Board.EW_tricks = 2
+    Board.ns_tricks = 2
+    Board.ew_tricks = 2
     context = _card_undo_context(board_id, 'solo')
     assert '6C' in context['unplayed_card_names']['N']
     assert 'KC' in context['unplayed_card_names']['E']
     assert '2C' not in context['unplayed_card_names']['W']
-    assert context['NS_tricks'] == 2
-    assert context['EW_tricks'] == 1
+    assert context['ns_tricks'] == 2
+    assert context['ew_tricks'] == 1
