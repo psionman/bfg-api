@@ -1,31 +1,32 @@
 """API functionality for BfG."""
 
 from importlib.metadata import version
+from datetime import timedelta
 import json
 import structlog
-from datetime import timedelta
 from django.utils import timezone
 
 from bridgeobjects import CALLS
 from bfgdealer import Board, SOLO_SET_HANDS, DUO_SET_HANDS
 
-from .constants import PACKAGES
-from .utilities import get_room_from_name, update_user_activity
-from .images import CURSOR, CALL_IMAGES, CARD_IMAGES
-from .archive import (get_history_boards_text, rotate_archived_boards,
-                      save_boards_file_to_room, get_user_archive_list,
-                      get_board_file_from_room)
-from .board import (get_new_board, get_history_board, get_board_from_pbn,
-                    undo_context, get_room_board, restart_board_context)
+from common.constants import PACKAGES
+from common.utilities import get_room_from_name, update_user_activity
+from common.images import CURSOR, CALL_IMAGES, CARD_IMAGES
+from common.archive import (
+    get_history_boards_text, rotate_archived_boards, save_boards_file_to_room,
+    get_user_archive_list, get_board_file_from_room)
+from common.board import (
+    get_new_board, get_history_board, get_board_from_pbn, undo_context,
+    get_room_board, restart_board_context)
 
-from .bidding import get_bid_made, get_bid_context
-from .cardplay import (get_cardplay_context, card_played_context,
-                       replay_board_context, claim_context,
-                       compare_scores_context)
-from .constants import SOURCES
+from common.bidding import get_bid_made, get_bid_context
+from common.cardplay import (
+    get_cardplay_context, card_played_context, replay_board_context,
+    claim_context, compare_scores_context)
+from common.constants import SOURCES
+from common.utilities import get_user_from_username
+
 from _version import __version__ as api_version
-from .utilities import get_user_from_username
-from .models import User
 
 logger = structlog.get_logger()
 
@@ -181,10 +182,10 @@ def message_received(params: dict) -> None:
 
 
 def database_update(params: dict) -> None:
-    logger.info(
-        'database-update',
-        username=params.username,
-        payload=params.payload)
+    # logger.info(
+    #     'database-update',
+    #     username=params.username,
+    #     payload=params.payload)
     update_user_activity(params)
     return None
 

@@ -2,9 +2,10 @@ from bridgeobjects import SUITS, SEATS, Hand
 from bfgdealer import Board
 from common.bidding_box import BiddingBox
 
-from .archive import get_pbn_string
-from .constants import DEFAULT_SUIT_ORDER
-from .utilities import save_board, three_passes, passed_out, get_bidding_data
+from common.archive import get_pbn_string
+from common.constants import DEFAULT_SUIT_ORDER
+from common.utilities import (
+    save_board, three_passes, passed_out, get_bidding_data)
 
 
 def get_board_context(params, room, board) -> dict[str, str]:
@@ -40,9 +41,8 @@ def _get_board_context(board: Board, room: int) -> dict[str, object]:
     return {
         'dealer': board.dealer,
         'bid_history': board.bid_history,
-        # 'highest_level': highest_level,
-        # 'suppress_denoms': suppress_denoms,
         'bidding_params': bidding_params,
+        'description': board.description,
         'can_double': False,
         'can_redouble': False,
         'board_number': room.board_number,

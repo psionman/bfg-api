@@ -1,5 +1,6 @@
-from bridgeobjects import CALLS, Auction
-from .images import CALLS_REMOVE
+from bridgeobjects import CALLS
+
+from common.images import CALLS_REMOVE
 
 EXTRA_CALLS = ['P', 'D', 'R']
 MAXIMUM_BID_LEVEL = 7

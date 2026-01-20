@@ -1,9 +1,0 @@
-{
-	"Print value and user with colour": {
-		"prefix": "cpu",
-		"body": [
-			"cprint(f\"$1 {params.username} {$2}\", MODULE_COLOUR)",
-		],
-		"description": "Print with colour"
-	}
-}

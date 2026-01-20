@@ -1,27 +1,55 @@
-import json
-import structlog
+"""
+Application logic for managing bridge boards, auctions, and game state.
 
+This module provides functions to generate new boards, restart existing boards,
+process boards from PBN strings, track bid and trick history, and update the
+game context for users. It interacts with common utilities, constants,
+contexts, bidding rules, and the archive system.
+
+Functions:
+- get_new_board: Create a new board and return its context.
+- restart_board_context: Reset a board and return the updated context.
+- get_room_board: Retrieve the current state of a board in a room.
+- get_history_board: Return a board restored from the archive.
+- get_board_from_pbn: Generate a board from a PBN string.
+- undo_context: Undo card plays or bids and update context.
+
+This module depends on common modules, bfgdealer, bfgcardplay, bridgeobjects,
+and structlog for logging.
+"""
+import json
+import uuid
+
+import structlog
 from bfgcardplay import next_card
 from bridgeobjects import SEATS, VULNERABILITY, parse_pbn, Auction
 from bfgdealer import DealerSolo, DealerDuo, Board, Trick
 
-from .bidding import get_initial_auction
-from .utilities import (get_unplayed_cards_for_board_hands, get_room_from_name,
-                        passed_out, get_current_player, update_user_activity)
-from .contexts import get_board_context, get_pbn_string
-from .constants import SOURCES, CONTRACT_BASE
-from .archive import save_board_to_archive, get_board_from_archive
-from .undo_cardplay import undo_cardplay
+from common.bidding import get_initial_auction
+from common.utilities import (
+    get_unplayed_cards_for_board_hands, get_room_from_name, passed_out,
+    get_current_player, update_user_activity)
+from common.contexts import get_board_context, get_pbn_string
+from common.constants import SOURCES, CONTRACT_BASE
+from common.archive import save_board_to_archive, get_board_from_archive
+from common.undo_cardplay import undo_cardplay
 
 
 logger = structlog.get_logger()
 
 
 def get_new_board(params: dict[str, str]) -> dict[str, object]:
-    """Return the context after a new board has been generated."""
+    """
+    Generate a new board and return the full board context.
+
+    Increments the board number for the room, assigns dealer and vulnerability,
+    initialises auction, updates user activity, saves the board to archive, and
+    returns a dictionary containing the board state and context.
+    """
     room = get_room_from_name(params.room_name)
     room.board_number += 1
     board = _get_new_board(params)
+    board.description = str(uuid.uuid1())
     board.vulnerable = VULNERABILITY[room.board_number % 16]
     board.dealer = SEATS[(room.board_number - 1) % 4]
     update_user_activity(params)
@@ -45,8 +73,14 @@ def get_new_board(params: dict[str, str]) -> dict[str, object]:
     return get_board_context(params, room, board)
 
 
-def restart_board_context(params):
-    """Return the context for a restart board."""
+def restart_board_context(params) -> dict:
+    """
+    Reset an existing board for a room and return the updated board context.
+
+    Clears previous tricks, resets auctions and current player, and refreshes
+    unplayed cards for all hands. Returns a dictionary representing the current
+    board context.
+    """
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     board.tricks =[Trick()]
@@ -62,15 +96,25 @@ def restart_board_context(params):
 
 
 def _get_new_board(params: dict[str, str]) -> tuple[int, Board]:
+    """
+    Select the appropriate new board based on provided parameters.
+
+    Returns a random board or a set board depending on 'set_hands' and
+    'use_set_hands' flags.
+    """
     if not params.set_hands:
-        return _get_random_board(params)
+        return _get_random_board()
     if params.use_set_hands:
         return _get_set_hand(params)
-    return _get_random_board(params)
+    return _get_random_board()
 
 
 def _get_set_hand(params: dict[str, str]) -> tuple[Board, int]:
-    """Return a set_hand."""
+    """
+    Generate a board from a pre-set hand for a room.
+
+    Uses dealer engine and sets the board's source to 'set-hands'.
+    """
     room = get_room_from_name(params.room_name)
     set_hands = json.loads(room.set_hands)
 
@@ -83,6 +127,11 @@ def _get_set_hand(params: dict[str, str]) -> tuple[Board, int]:
 
 def _get_dealer_engine(params: dict[str, object],
                        board_number: int) -> tuple[object, str]:
+    """
+    Return the dealer engine and dealer seat for a board.
+
+    Chooses between DealerSolo and DealerDuo depending on the game mode.
+    """
     if params.mode == 'duo':
         dealer = SEATS[board_number % 4]
         dealer_engine = DealerDuo(dealer)
@@ -92,13 +141,20 @@ def _get_dealer_engine(params: dict[str, object],
     return (dealer_engine, dealer)
 
 
-def _set_board_hands(board: Board):
+def _set_board_hands(board: Board) -> None:
+    """
+    Assign the dealt hands to each player on the board.
+    """
     for index in range(4):
         board.players[index].hand = board.hands[index]
 
 
-def _get_random_board(params) -> Board:
-    """Return a random board."""
+def _get_random_board() -> Board:
+    """
+    Generate a random board and assign it to the players.
+
+    Uses DealerDuo for dealing and marks the board source as 'random'.
+    """
     # Doesn't matter whether we use DealerSolo or DealerDuo
     board = DealerDuo().deal_random_board()
     board.set_hand = None
@@ -108,6 +164,11 @@ def _get_random_board(params) -> Board:
 
 
 def get_room_board(params: dict[str, str]) -> dict[str, object]:
+    """
+    Return the full context of the current board in a room.
+
+    Includes bid history, contract, tricks, stage, and other relevant state.
+    """
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
 
@@ -138,6 +199,11 @@ def get_room_board(params: dict[str, str]) -> dict[str, object]:
 
 
 def get_history_board(params) -> Board:
+    """
+    Return a board restored from the archive for a room and update context.
+
+    Restores bid history, auction, and logs the event.
+    """
     room = get_room_from_name(params.room_name)
     board = get_board_from_archive(params)
 
@@ -155,6 +221,11 @@ def get_history_board(params) -> Board:
 
 
 def _get_trick_details(board: Board) -> tuple[list[str], str, str]:
+    """
+    Retrieve details of the last trick for a board.
+
+    Returns the trick cards, leader, and suit if available.
+    """
     trick_cards, trick_leader, trick_suit = [], '', ''
     if board.tricks:
         if board.tricks[-1].cards:
@@ -170,6 +241,11 @@ def _get_trick_details(board: Board) -> tuple[list[str], str, str]:
 
 
 def get_board_from_pbn(params):
+    """
+    Generate a board from a PBN string and return its context.
+
+    Updates unplayed cards, assigns source as 'pbn', and logs the board.
+    """
     """Return board from a PBN string."""
     # room = get_room_from_name(params.room_name)
     board = _get_board_from_pbn_string(params)
@@ -195,6 +271,11 @@ def get_board_from_pbn(params):
 
 
 def _trick_context_for_pbn_board(board: Board) -> dict[str, str]:
+    """
+    Initialise trick context for a PBN board.
+
+    Creates the first trick if none exist and provides suggested card.
+    """
     if not board.tricks:
         trick = board.setup_first_trick_for_board()
         board.tricks.append(trick)
@@ -206,6 +287,11 @@ def _trick_context_for_pbn_board(board: Board) -> dict[str, str]:
 
 
 def _play_initial_cards(board: Board) -> dict[str, str]:
+    """
+    Play the initial cards on a board and update trick context.
+
+    Updates current player, completes tricks, and calculates trick scores.
+    """
     trick_context = {}
     board.current_player = _get_leader(board.contract.declarer)
     for trick in board.tricks:
@@ -221,6 +307,9 @@ def _play_initial_cards(board: Board) -> dict[str, str]:
 
 
 def _trick_context(trick: Trick) -> dict[str, object]:
+    """
+    Extract trick leader, suit, and card names for a trick.
+    """
     if not trick.cards:
         return {}
     return {
@@ -231,6 +320,12 @@ def _trick_context(trick: Trick) -> dict[str, object]:
 
 
 def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
+    """
+    Parse a PBN string and return a Board object.
+
+    Handles line breaks, invalid boards, and restores auction and unplayed
+    cards.
+    """
     pbn_list = []
     if '\n' in params.pbn_text:
         pbn_list_raw = (params.pbn_text).split('\n')
@@ -263,7 +358,9 @@ def _get_board_from_pbn_string(params: dict[str, str]) -> Board:
 
 
 def _get_leader(declarer: str) -> str:
-    """Return the index of the board leader."""
+    """
+    Determine the next leader for a board based on the declarer.
+    """
     if not declarer:
         return ''
     seat_index = SEATS.index(declarer)
@@ -272,6 +369,9 @@ def _get_leader(declarer: str) -> str:
 
 
 def update_trick_scores(board: Board, trick: Trick):
+    """
+    Update NS and EW trick counts for a board based on the last trick winner.
+    """
     if not trick.winner:
         return
     if trick.winner in 'NS':
@@ -281,6 +381,11 @@ def update_trick_scores(board: Board, trick: Trick):
 
 
 def undo_context(params):
+    """
+    Undo the last card play or bid and return the updated board context.
+
+    Updates the auction, bid history, current player, and user activity.
+    """
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     initial_state = False
@@ -309,6 +414,11 @@ def undo_context(params):
 
 
 def _undo_bids(board, params: dict) -> None:
+    """
+    Undo a sequence of bids until reaching the specified bidder seat.
+
+    Restores the board to the previous auction state if necessary.
+    """
     bid_history = list(board.bid_history)
     bidder_seat_index = SEATS.index(board.dealer) + len(board.bid_history) - 1
     bidder_seat_index %= 4

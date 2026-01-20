@@ -1,3 +1,12 @@
+"""
+Bridge bidding logic for handling bids, auctions, and game context updates.
+
+This module provides functions for processing bids in both solo and duo modes,
+updating board state, generating initial auctions, and retrieving bid context.
+It interacts with Room and Board models, BiddingBox utilities, and logging.
+"""
+
+CONTRACT_BASE = 6
 
 import structlog
 
@@ -5,33 +14,39 @@ from bridgeobjects import SEATS, Call, Contract, Auction
 from bfgbidding import comment_xrefs
 from bfgdealer import Board
 
-from .bidding_box import BiddingBox
-from .models import Room
-from .utilities import (
+from common.bidding_box import BiddingBox
+from common.models import Room
+from common.utilities import (
     get_room_from_name, three_passes, passed_out, get_bidding_data,
     update_user_activity)
-from .constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
-from .archive import get_pbn_string
-from .contexts import get_board_context
+from common.constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
+from common.archive import get_pbn_string
+from common.contexts import get_board_context
 
 logger = structlog.get_logger()
 
 
 def get_bid_made(params: dict[str, str]) -> dict[str, str]:
-    # if params.bid == 'restart':
-    #     logger.info('Clicked restart board', username=params.username)
-    #     return _restart_board(params)
+    """
+    Process a bid made by a player and return the updated context.
+
+    Routes to duo or solo bid handling depending on the game mode.
+    """
     if params.mode == 'duo':
         return bid_made_duo(params)
     return bid_made_solo(params)
 
 
 def bid_made_duo(params: dict[str, str]) -> dict[str, str]:
-    """Return a list of bid images after a call has been made."""
+    """
+    Handle a bid made in duo mode and return board and bid context.
+
+    Updates bid history, determines declarer and contract, and updates the
+    BiddingBox and board context.
+    """
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
 
-    # Bid gets appended to bid_history here
     _get_opps_bid(params, board)
 
     three_passes_ = three_passes(board.bid_history)
@@ -52,19 +67,24 @@ def bid_made_duo(params: dict[str, str]) -> dict[str, str]:
         'bid_history': board.bid_history,
         'contract': board.contract.name,
         'declarer': board.declarer,
-        'three_passes': three_passes,
-        'passed_out': passed_out,
+        'three_passes': three_passes_,
+        'passed_out': passed_out_,
         'bid_box_names': bb_names,
         'bid_box_extra_names': bb_extra_names,
         'board_pbn': get_pbn_string(board),
-        'contract_target': 6 + board.contract.level,
+        'contract_target': CONTRACT_BASE + board.contract.level,
         'bidding_params': bidding_params,
     }
     return {**specific_context, **state_context}
 
 
 def bid_made_solo(params: dict[str, str]) -> dict[str, str]:
-    """Validate bid made and update show comment etc.."""
+    """
+    Handle a bid made in solo mode and return board and bid context.
+
+    Validates the bid, compares with suggested bid, and returns comments
+    and strategy text.
+    """
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
 
@@ -92,18 +112,12 @@ def bid_made_solo(params: dict[str, str]) -> dict[str, str]:
     return {**specific_context, **state_context}
 
 
-# def _restart_board(params):
-#     """Return the context for a restart board."""
-#     room = get_room_from_name(params.room_name)
-#     board = Board().from_json(room.board)
-#     board.auction = Auction()
-#     board.auction = get_initial_auction(params, board, [])
-#     board.current_player = None
-#     return get_board_context(params, room, board)
-
-
 def _get_opps_bid(params: dict[str, str], board: Board) -> None:
-    """Update the board bid history with the bid."""
+    """
+    Update the board bid history with the player's bid.
+
+    Also triggers opponent bids unless the board has three consecutive passes.
+    """
     bid = params.bid
     if not bid or bid in WARNINGS:
         return
@@ -119,6 +133,11 @@ def _get_opps_bid(params: dict[str, str], board: Board) -> None:
 
 
 def _get_declarer_contract(board: Board) -> tuple[str, Contract]:
+    """
+    Determine the declarer and contract from the board's current bid history.
+
+    Sets up the auction object and retrieves contract information.
+    """
     (declarer, contract) = ('', '')
     if board.bid_history[-4] == 'P':
         del board.bid_history[-1]
@@ -131,7 +150,11 @@ def _get_declarer_contract(board: Board) -> tuple[str, Contract]:
 
 
 def _get_comment_and_strategy(suggested_bid):
-    """Retrieve bid comment and strategy text."""
+    """
+    Retrieve the HTML comment and strategy for a suggested bid.
+
+    Returns default values if the bid does not have a registered comment.
+    """
     if suggested_bid.call_id not in comment_xrefs:
         suggested_bid.call_id = '0000'
     suggested_bid.get_comments()
@@ -140,9 +163,12 @@ def _get_comment_and_strategy(suggested_bid):
     return (html_comment, strategy_html)
 
 
-def get_initial_auction(params: dict[str, str],
-                        board: Board, bid_history=None) -> Auction:
-    """Return initial bid_history."""
+def get_initial_auction(params: dict[str, str], board: Board, bid_history=None) -> Auction:
+    """
+    Generate the initial auction for a board and return an Auction object.
+
+    Simulates player bids until the initial board state is complete.
+    """
     board.bid_history = bid_history or []
     dealer_index = SEATS.index(board.dealer)
     (seat_diff, mod_value, initial_count) = _get_initial_bid_parameters(
@@ -157,7 +183,11 @@ def get_initial_auction(params: dict[str, str],
 
 
 def get_auction(board: Board, bid_history=None) -> Auction:
-    """Return initial bid_history."""
+    """
+    Generate the full auction for a board and return an Auction object.
+
+    Simulates player bidding until the board reaches three consecutive passes.
+    """
     board.bid_history = bid_history or []
     dealer_index = SEATS.index(board.dealer)
     while not three_passes(board.bid_history):
@@ -167,15 +197,17 @@ def get_auction(board: Board, bid_history=None) -> Auction:
     return Auction(auction_calls, board.dealer)
 
 
-def _get_initial_bid_parameters(params: dict[str, str],
-                                dealer_index: int) -> tuple[int, int, int]:
+def _get_initial_bid_parameters(
+        params: dict[str, str], dealer_index: int) -> tuple[int, int, int]:
+    """
+    Calculate parameters needed to start the auction.
+
+    Determines seat difference, mod value, and initial bid count based on mode.
+    """
     seat_index = SEATS.index(params.seat)
 
-    # seat_diff represents the number of bids that are
-    # required given the dealer and seat
     seat_diff = dealer_index - seat_index - 1
 
-    # mod_value depends on whether there is one player or two
     if params.mode == 'duo':
         initial_count = 1
         mod_value = 2
@@ -185,9 +217,13 @@ def _get_initial_bid_parameters(params: dict[str, str],
     return (seat_diff, mod_value, initial_count)
 
 
-def get_bid_context(params: dict[str, str],
-                    use_suggested_bid=True) -> dict[str, str]:
-    """Return context after use a bid."""
+def get_bid_context(
+        params: dict[str, str], use_suggested_bid=True) -> dict[str, str]:
+    """
+    Return the context for the board after a bid has been made.
+
+    Updates bid history, board state, BiddingBox, and returns combined context.
+    """
     room = get_room_from_name(params.room_name)
     board = Board().from_json(room.board)
     bid = _update_bid_history(room, board, use_suggested_bid)
@@ -211,18 +247,28 @@ def get_bid_context(params: dict[str, str],
         'contract': board.contract.name,
         'declarer': board.declarer,
         'board_pbn': get_pbn_string(board),
-        'contract_target': 6 + board.contract.level,
+        'contract_target': CONTRACT_BASE + board.contract.level,
     }
     return {**specific_context, ** state_context}
 
 
 def _update_bid_history(room: Room, board: Board, use_suggested_bid: bool):
+    """
+    Append the selected bid to the board's bid history.
+
+    Returns the bid used for logging and context updates.
+    """
     bid = room.suggested_bid if use_suggested_bid else room.own_bid
     board.bid_history.append(bid)
     return bid
 
 
 def _update_board_other_bids(board: Board, params: dict) -> None:
+    """
+    Simulate bids for other players on the board after a player's bid.
+
+    Updates bid history, logs the calls, and recalculates declarer and contract.
+    """
     seat_index = SEATS.index(params.seat)
 
     for other in range(3):

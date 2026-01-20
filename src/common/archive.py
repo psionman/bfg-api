@@ -12,9 +12,9 @@ from bridgeobjects import (SEATS, SUIT_NAMES, RANKS,
 from bfgbidding import Hand
 from bfgdealer import Board, Auction
 
-from .models import Room
-from .utilities import get_room_from_name
-from .constants import MAX_ARCHIVE
+from common.models import Room
+from common.utilities import get_room_from_name
+from common.constants import MAX_ARCHIVE
 
 DATE_FORMAT = '%d %b %Y %H:%M:%S'
 

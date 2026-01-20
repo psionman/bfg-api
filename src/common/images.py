@@ -1,9 +1,9 @@
 """Provide images for BfG functions."""
 
 import io
+from pathlib import Path
 import base64
 from PIL import Image as PilImage
-from pathlib import Path
 
 from bridgeobjects import CALLS, CARD_NAMES
 

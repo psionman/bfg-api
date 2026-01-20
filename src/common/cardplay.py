@@ -5,10 +5,11 @@ from bridgeobjects import SEATS, Card
 from bfgdealer import Board, Trick
 from bfgcardplay import next_card
 
-from .utilities import (get_room_from_name, passed_out, save_board,
-                        get_current_player, update_user_activity)
-from .contexts import get_board_context
-from .board import update_trick_scores
+from common.utilities import (
+    get_room_from_name, passed_out, save_board, get_current_player,
+    update_user_activity)
+from common.contexts import get_board_context
+from common.board import update_trick_scores
 
 logger = structlog.get_logger()
 
