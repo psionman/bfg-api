@@ -38,7 +38,7 @@ BOARD_PARAMS = {
     'seat_index': 0,
 }
 
-params = {
+req = {
     'room_name': 'test',
     'seat': 'N',
     'username': 'test',
@@ -63,11 +63,11 @@ def update_board(board_index):
     board = boards[board_index]
     pbn_str = '\n'.join(board.board_to_pbn())
 
-    params = {key: item for key, item in BOARD_PARAMS.items()}
-    params['pbn_text'] = pbn_str
+    req = {key: item for key, item in BOARD_PARAMS.items()}
+    req['pbn_text'] = pbn_str
     uri = 'pbn-board'
 
-    json_params = json.dumps(params)
+    json_params = json.dumps(req)
     payload = quote(json_params)
     response = requests.get(f"{APP_DOMAIN}/{uri}/{payload}")
     return response
@@ -76,9 +76,9 @@ def update_board(board_index):
 def _card_undo_context(board_index, mode):
     response = update_board(board_index)
     uri = 'undo'
-    params['mode'] = mode
+    req['mode'] = mode
 
-    json_params = json.dumps(params)
+    json_params = json.dumps(req)
     payload = quote(json_params)
     response = requests.get(f"{APP_DOMAIN}/{uri}/{payload}")
     context = response.json()

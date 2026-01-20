@@ -13,7 +13,7 @@ from bfgbidding import Hand
 from bfgdealer import Board, Auction
 
 from common.models import Room
-from common.utilities import get_room_from_name
+from common.utilities import get_room_from_name, GameRequest
 from common.constants import MAX_ARCHIVE
 
 DATE_FORMAT = '%d %b %Y %H:%M:%S'
@@ -30,23 +30,23 @@ def save_board_to_archive(room: Room, board: Board) -> None:
 
 
 def get_history_boards_text(
-        params: dict[str, str]) -> dict[str, dict[str, str]]:
+        req: GameRequest) -> dict[str, dict[str, str]]:
     boards = []
     raw_boards = []
-    raw_boards = _get_raw_archive_boards(params.room_name)
+    raw_boards = _get_raw_archive_boards(req.room_name)
     for index, board in enumerate(raw_boards):
         board_dict = _get_history_board_dict(index, board)
         boards.append(board_dict)
     return {'boards': boards,}
 
 
-def save_boards_file_to_room(params):
-    room = get_room_from_name(params.room_name)
+def save_boards_file_to_room(req):
+    room = get_room_from_name(req.room_name)
     saved_boards = json.loads(room.saved_boards)
     file = {
-        'name': params.file_name,
-        'description': params.file_description,
-        'pbn_text': params.pbn_text,
+        'name': req.file_name,
+        'description': req.file_description,
+        'pbn_text': req.pbn_text,
     }
     saved_boards.append(file)
     room.saved_boards = json.dumps(saved_boards)
@@ -54,14 +54,14 @@ def save_boards_file_to_room(params):
     return {'boards_saved': True}
 
 
-def get_user_archive_list(params):
-    room = get_room_from_name(params.username)
+def get_user_archive_list(req):
+    room = get_room_from_name(req.username)
     saved_boards = json.loads(room.saved_boards)
     archives = sorted([archive['description'] for archive in saved_boards])
     return {'archives': archives}
 
 
-def get_board_file_from_room(params):
+def get_board_file_from_room(req):
     return {
         # 'file_names': file_names
     }
@@ -117,29 +117,29 @@ def get_pbn_string(board: Board) -> str:
     return create_pbn_board(board)
 
 
-def get_board_from_archive(params: dict[str, str]) -> Board:
+def get_board_from_archive(req: GameRequest) -> Board:
     """Get the archived board and make it room current board."""
-    archived_board_id = params.board_id
+    archived_board_id = req.board_id
     if not archived_board_id or int(archived_board_id) == 0:
         archived_board_id = 1
-    boards = _get_raw_archive_boards(params.room_name)
-    board = boards[int(params.board_id) - 1]
-    board.identifier = params.board_id
+    boards = _get_raw_archive_boards(req.room_name)
+    board = boards[int(req.board_id) - 1]
+    board.identifier = req.board_id
     return board
 
 
-def rotate_archived_boards(params: dict[str, str]) -> dict[str, object]:
+def rotate_archived_boards(req: GameRequest) -> dict[str, object]:
     """Rotate archive hands, placing N in the rotation_seat."""
-    room = get_room_from_name(params.room_name)
-    boards = _get_raw_archive_boards(params.room_name)
-    rotation_index = SEATS.index(params.rotation_seat)
+    room = get_room_from_name(req.room_name)
+    boards = _get_raw_archive_boards(req.room_name)
+    rotation_index = SEATS.index(req.rotation_seat)
     for board in boards:
         board = _rotate_board(board, rotation_index)
 
     archive = _create_list_of_archive_boards(boards)
     room.archive = json.dumps(archive)
     room.save()
-    return get_history_boards_text(params)
+    return get_history_boards_text(req)
 
 
 def _rotate_board(board: Board, rotation_index: int) -> Board:

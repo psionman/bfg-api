@@ -9,7 +9,7 @@ from ..tests.utilities import get_board
 BOARD_PATH = Path('tests', 'test_data', 'board.pbn')
 APP_DOMAIN = 'http://192.168.4.28:8000/bfg'
 
-params = {
+req = {
     'username': 'test',
     'partner_username': None,
     'board_id': None,
@@ -43,10 +43,10 @@ def get_board_context(board_index):
     board = get_board(boards, board_index)
     pbn_str = '\n'.join(board.board_to_pbn())
 
-    params['pbn_text'] = pbn_str
+    req['pbn_text'] = pbn_str
     uri = 'pbn-board'
 
-    json_params = json.dumps(params)
+    json_params = json.dumps(req)
     payload = quote(json_params)
     response = requests.get(f"{APP_DOMAIN}/{uri}/{payload}")
     return response.json()

@@ -1,70 +1,93 @@
 """Helper classes for BfG."""
 import json
 from datetime import datetime, timezone
-from termcolor import cprint
 
+from dataclasses import dataclass, field
+from typing import Any
 
 from bridgeobjects import SEATS, Trick, Call, Denomination
 from bfgdealer import Board
 
 from common.models import Room, User
 
-MODULE_COLOUR = 'blue'
 
+@dataclass(slots=True)
+class GameRequest:
+    username: str = ""
+    partner_username: str = ""
+    board_id: str = ""
+    seat: str = "N"
+    room_name: str = ""
+    bid: str = ""
+    generate_contract: bool = False
+    set_hands: list = field(default_factory=list)
+    display_hand_type: bool = False
+    use_set_hands: bool = False
+    mode: str = ""
+    card_played: str = ""
+    card_player: str = ""
+    board_number: int = 0
+    rotation_seat: str = ""
+    dealer: str = ""
+    claim_tricks: int = 0
+    NS_tricks: int = 0
+    EW_tricks: int = 0
+    tester: bool = False
+    file_name: str = ""
+    file_description: str = ""
+    archive_name: str = ""
+    pbn_text: str = ""
+    browser: bool = True
+    use_double_dummy: bool = False
+    message: dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)
+    user_query: str = ""
 
-def get_room_from_name(name: str) -> Room:
-    return Room.objects.get_or_create(name=name)[0]
+    seat_index: int = field(init=False)
 
-
-def get_user_from_username(username: str) -> User:
-    return User.objects.get_or_create(username=username)[0]
-
-
-def update_user_activity(params: dict) -> None:
-    user = get_user_from_username(params.username)
-    user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
-    user.save()
-
-
-class Params():
-    def __init__(self, raw_params):
-        params = json.loads(raw_params)
-
-        self.username = params.get('username', '')
-        self.partner_username = params.get('partner_username', '')
-        self.board_id = params.get('board_id', '')
-        self.seat = params.get('seat', 'N')
-        self.room_name = params.get('room_name', '')
-        self.bid = params.get('bid', '')
-        self.generate_contract = params.get('generate_contract', False)
-        self.set_hands = params.get('set_hands', [])
-        self.display_hand_type = params.get('display_hand_type', False)
-        self.use_set_hands = params.get('use_set_hands', False)
-        self.mode = params.get('mode', '')
-        self.card_played = params.get('card_played', '')
-        self.card_player = params.get('card_player', '')
-        self.board_number = params.get('board_number', '')
-        self.rotation_seat = params.get('rotation_seat', '')
-        self.dealer = params.get('dealer', '')
-        self.claim_tricks = params.get('claim_tricks', 0)
-        self.NS_tricks = params.get('NS_tricks', 0)
-        self.EW_tricks = params.get('EW_tricks', 0)
-        self.tester = params.get('tester', False)
-        self.file_name = params.get('file_name', '')
-        self.file_description = params.get('file_description', '')
-        self.archive_name = params.get('archive_name', '')
-        self.pbn_text = params.get('pbn_text', '')
-        self.pbn_text_length = params.get('file_description', 0)
-        self.browser = params.get('browser', True)
-        self.use_double_dummy = params.get('use_double_dummy', False)
-        self.message = params.get('message', {})
-        self.payload = params.get('payload', {})
-        self.user_query = params.get('user_query', '')
+    def __post_init__(self) -> None:
+        if self.seat not in SEATS:
+            raise ValueError(f"Invalid seat: {self.seat}")
 
         self.seat_index = SEATS.index(self.seat)
 
-    def __repr__(self):
-        return str(self.__dict__)
+        if self.mode not in {"solo", "duo", "solo-no-comments"}:
+            raise ValueError(f"Invalid mode: {self.mode}")
+
+
+def req_from_json(raw_params: str) -> GameRequest:
+    data = json.loads(raw_params)
+    return GameRequest(
+        username=data.get("username", ""),
+        partner_username=data.get("partner_username", ""),
+        board_id=data.get("board_id", ""),
+        seat=data.get("seat", "N"),
+        room_name=data.get("room_name", ""),
+        bid=data.get("bid", ""),
+        generate_contract=bool(data.get("generate_contract", False)),
+        set_hands=data.get("set_hands", []),
+        display_hand_type=bool(data.get("display_hand_type", False)),
+        use_set_hands=bool(data.get("use_set_hands", False)),
+        mode=data.get("mode", ""),
+        card_played=data.get("card_played", ""),
+        card_player=data.get("card_player", ""),
+        board_number=int(data.get("board_number", 0)),
+        rotation_seat=data.get("rotation_seat", ""),
+        dealer=data.get("dealer", ""),
+        claim_tricks=int(data.get("claim_tricks", 0)),
+        NS_tricks=int(data.get("NS_tricks", 0)),
+        EW_tricks=int(data.get("EW_tricks", 0)),
+        tester=bool(data.get("tester", False)),
+        file_name=data.get("file_name", ""),
+        file_description=data.get("file_description", ""),
+        archive_name=data.get("archive_name", ""),
+        pbn_text=data.get("pbn_text", ""),
+        browser=bool(data.get("browser", True)),
+        use_double_dummy=bool(data.get("use_double_dummy", False)),
+        message=data.get("message", {}),
+        payload=data.get("payload", {}),
+        user_query=data.get("user_query", ""),
+    )
 
 
 class UserProxy():
@@ -79,6 +102,20 @@ class UserProxy():
 
     def __repr__(self):
         return str(self.__dict__)
+
+
+def get_room_from_name(name: str) -> Room:
+    return Room.objects.get_or_create(name=name)[0]
+
+
+def get_user_from_username(username: str) -> User:
+    return User.objects.get_or_create(username=username)[0]
+
+
+def update_user_activity(req: dict) -> None:
+    user = get_user_from_username(req.username)
+    user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
+    user.save()
 
 
 def three_passes(bid_history: list[str]) -> bool:    # X
@@ -122,7 +159,7 @@ def dict_print(context):
     print('='*40, 'dict print', '='*40)
     sorted_keys = sorted(context, key=lambda x: x)
     for key in sorted_keys:
-        cprint(f"{key}, {context[key]}", MODULE_COLOUR)
+        print(f"{key}, {context[key]}")
     print('='*100)
     print('')
 

@@ -10,7 +10,7 @@ http://127.0.0.1:8000/bfg/static-data/%22%22/
 
 ---------------------------------------------------------------
 
-On remote use the minimum (note the params %22%22 = ""):
+On remote use the minimum (note the req %22%22 = ""):
 
 https://bidforgame.com/bfg/static-data/%22%22/
 

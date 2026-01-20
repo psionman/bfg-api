@@ -9,55 +9,55 @@ from rest_framework import status
 from common.models import Room
 import common.application as app
 from common.serializers import RoomSerializer
-from common.utilities import Params
+from common.utilities import req_from_json
 
 
 class UserLogin(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        app.user_login(params, request.META.get('REMOTE_ADDR'))
+    def get(request, req):
+        req = req_from_json(req)
+        app.user_login(req, request.META.get('REMOTE_ADDR'))
 
         return JsonResponse({}, safe=False)
 
 
 class UserLogout(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        app.user_logout(params, request.META.get('REMOTE_ADDR'))
+    def get(request, req):
+        req = req_from_json(req)
+        app.user_logout(req, request.META.get('REMOTE_ADDR'))
         return JsonResponse({}, safe=False)
 
 
 class UserSeat(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        app.seat_assigned(params)
+    def get(request, req):
+        req = req_from_json(req)
+        app.seat_assigned(req)
         return JsonResponse({}, safe=False)
 
 
 class StaticData(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
+    def get(request, req):
+        req = req_from_json(req)
         context = app.static_data(request.META.get('REMOTE_ADDR'))
         return JsonResponse(context, safe=False)
 
 
 class GetUserSetHands(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.get_user_set_hands(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.get_user_set_hands(req)
         return JsonResponse(context, safe=False)
 
 
 class SetUserSetHands(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.set_user_set_hands(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.set_user_set_hands(req)
         return JsonResponse(context, safe=False)
 
 
@@ -166,158 +166,158 @@ class RoomDetailApiView(APIView):
 
 class NewBoard(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.new_board(params)
-        if params.browser:
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.new_board(req)
+        if req.browser:
             return JsonResponse(json.dumps(context), safe=False)
         return JsonResponse(context, safe=False)
 
 
 class RoomBoard(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.room_board(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.room_board(req)
         return JsonResponse(context, safe=False)
 
 
 class PbnBoard(View):
     @staticmethod
-    def get(request, params):
+    def get(request, req):
         """Return board from a PBN string."""
-        params = Params(params)
-        context = app.board_from_pbn(params)
+        req = req_from_json(req)
+        context = app.board_from_pbn(req)
         return JsonResponse(context, safe=False)
 
 
 class GetHistory(View):
     @staticmethod
-    def get(request, params):
+    def get(request, req):
         """Return board archive."""
-        params = Params(params)
-        context = app.get_history(params)
+        req = req_from_json(req)
+        context = app.get_history(req)
         return JsonResponse(context, safe=False)
 
 
 class GetArchiveList(View):
     @staticmethod
-    def get(request, params):
+    def get(request, req):
         """Return a file of boards."""
-        params = Params(params)
-        context = app.get_archive_list(params)
+        req = req_from_json(req)
+        context = app.get_archive_list(req)
         return JsonResponse(context, safe=False)
 
 
 class GetBoardFile(View):
     @staticmethod
-    def get(request, params):
+    def get(request, req):
         """Return board file."""
-        params = Params(params)
-        context = app.get_board_file(params)
+        req = req_from_json(req)
+        context = app.get_board_file(req)
         return JsonResponse(context, safe=False)
 
 
 class BidMade(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.bid_made(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.bid_made(req)
         return JsonResponse(context, safe=False)
 
 
 class UseSuggestedBid(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.use_bid(params, use_suggested_bid=True)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.use_bid(req, use_suggested_bid=True)
         return JsonResponse(context, safe=False)
 
 
 class UseOwnBid(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.use_bid(params, use_suggested_bid=False)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.use_bid(req, use_suggested_bid=False)
         return JsonResponse(context, safe=False)
 
 
 class CardPlay(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.cardplay_setup(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.cardplay_setup(req)
         return JsonResponse(context, safe=False)
 
 
 class CardPlayed(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.card_played(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.card_played(req)
         return JsonResponse(context, safe=False)
 
 
 class RestartBoard(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.restart_board(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.restart_board(req)
         return JsonResponse(context, safe=False)
 
 
 class ReplayBoard(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.replay_board(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.replay_board(req)
         return JsonResponse(context, safe=False)
 
 
 class UseHistoryBoard(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.history_board(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.history_board(req)
         return JsonResponse(context, safe=False)
 
 
 class RotateBoards(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.rotate_boards(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.rotate_boards(req)
         return JsonResponse(context, safe=False)
 
 
 class Claim(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.claim(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.claim(req)
         return JsonResponse(context, safe=False)
 
 
 class CompareScores(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.compare_scores(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.compare_scores(req)
         return JsonResponse(context, safe=False)
 
 
 class Undo(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.undo(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.undo(req)
         return JsonResponse(context, safe=False)
 
 
 class GetParameters(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
+    def get(request, req):
+        req = req_from_json(req)
         context = {
             'slice': 200
         }
@@ -326,11 +326,11 @@ class GetParameters(View):
 
 class SaveBoardFile(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
+    def get(request, req):
+        req = req_from_json(req)
         context = {'boards_saved': False, }
-        if params.pbn_text:
-            context = app.save_board_file(params)
+        if req.pbn_text:
+            context = app.save_board_file(req)
         return JsonResponse(context, safe=False)
 
 
@@ -343,31 +343,31 @@ class Versions(View):
 
 class MessageSent(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.message_sent(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.message_sent(req)
         return JsonResponse(context, safe=False)
 
 
 class MessageReceived(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.message_received(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.message_received(req)
         return JsonResponse(context, safe=False)
 
 
 class DatabaseUpdate(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.database_update(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.database_update(req)
         return JsonResponse(context, safe=False)
 
 
 class UserStatus(View):
     @staticmethod
-    def get(request, params):
-        params = Params(params)
-        context = app.get_user_status(params)
+    def get(request, req):
+        req = req_from_json(req)
+        context = app.get_user_status(req)
         return JsonResponse(context, safe=False)

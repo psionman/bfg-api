@@ -6,7 +6,7 @@ from bfgdealer import Board, Trick
 from bfgcardplay import next_card
 
 from common.utilities import (
-    get_room_from_name, passed_out, save_board, get_current_player,
+    get_room_from_name, passed_out, save_board, get_current_player, GameRequest,
     update_user_activity)
 from common.contexts import get_board_context
 from common.board import update_trick_scores
@@ -17,16 +17,16 @@ logger = structlog.get_logger()
 ERROR_COLOUR = 'red'
 
 
-def get_cardplay_context(params: dict[str, str]) -> dict[str, object]:
+def get_cardplay_context(req: GameRequest) -> dict[str, object]:
     """ Return the static context for cardplay."""
-    room = get_room_from_name(params.room_name)
+    room = get_room_from_name(req.room_name)
     board = Board().from_json(room.board)
 
     _setup_first_trick(board)
 
     if passed_out(board.bid_history):
         return {}
-    suggested_card = _get_suggested_card_name(board, params)
+    suggested_card = _get_suggested_card_name(board, req)
     trick = board.tricks[-1]
 
     play_context = {
@@ -37,7 +37,7 @@ def get_cardplay_context(params: dict[str, str]) -> dict[str, object]:
         'trick_leader': trick.leader,
         'trick_count': len(board.tricks),
     }
-    state_context = get_board_context(params, room, board)
+    state_context = get_board_context(req, room, board)
     return {**play_context, **state_context}
 
 
@@ -48,31 +48,31 @@ def _setup_first_trick(board: Board):
     board.tricks = [trick]
 
 
-def _get_suggested_card_name(board: Board, params: dict) -> str:
+def _get_suggested_card_name(board: Board, req: dict) -> str:
     if not board.contract.name:
         return ''
     if not board.tricks[0].cards:
-        return next_card(board, params.use_double_dummy).name
+        return next_card(board, req.use_double_dummy).name
     return board.tricks[0].cards[0].name
 
 
-def card_played_context(params: dict[str, str]) -> dict[str, object]:
+def card_played_context(req: GameRequest) -> dict[str, object]:
     """
         Add a card to the current trick and increment current player.
         if necessary, complete the trick.
     """
-    room = get_room_from_name(params.room_name)
+    room = get_room_from_name(req.room_name)
     board = Board().from_json(room.board)
     logger.info(
             'card-played',
-            card=params.card_played,
-            username=params.card_player,
+            card=req.card_played,
+            username=req.card_player,
             seat=board.current_player)
-    update_user_activity(params)
+    update_user_activity(req)
 
     # This section here in case a complete trick is presented by PBN
     winner = _complete_trick(board, False)
-    _apply_played_card(board, params)
+    _apply_played_card(board, req)
 
     # Establish trick_cards and trick_leader because the trick is
     # completed here before the card is displayed in cardplay
@@ -84,7 +84,7 @@ def card_played_context(params: dict[str, str]) -> dict[str, object]:
     winner = _complete_trick(board, True)
 
     trick_suit = _get_trick_suit(board)
-    suggested_card = get_next_card(board, params)
+    suggested_card = get_next_card(board, req)
     # Trick count is 1 on the first trick
     # The trick context has to be set here as the
     # # trick is displayed as the next card is suggested.
@@ -98,7 +98,7 @@ def card_played_context(params: dict[str, str]) -> dict[str, object]:
         'winner': winner,
     }
     save_board(room, board)  # needed to display all cards with final score
-    state_context = get_board_context(params, room, board)
+    state_context = get_board_context(req, room, board)
 
     return {**state_context, **trick_context}
 
@@ -121,8 +121,8 @@ def _complete_trick(board: Board, update_score: bool) -> str:
     return winner
 
 
-def _apply_played_card(board: Board, params: dict[str, object]):
-    this_card = params.card_played
+def _apply_played_card(board: Board, req: dict[str, object]):
+    this_card = req.card_played
     trick = board.get_current_trick()
     unplayed_cards = board.hands[board.current_player].unplayed_cards
     if this_card and Card(this_card) in unplayed_cards:
@@ -138,21 +138,21 @@ def _get_trick_suit(board: Board) -> str:
     return board.tricks[-1].suit.name
 
 
-def get_next_card(board: Board, params: dict) -> str:
+def get_next_card(board: Board, req: dict) -> str:
     """Return the selected card for the current_player."""
 
     if not board.hands[board.current_player].unplayed_cards:
         cprint(f"No cards for player {board.current_player}", ERROR_COLOUR)
 
-    card_to_play = next_card(board, params.use_double_dummy)
+    card_to_play = next_card(board, req.use_double_dummy)
     if not card_to_play:
         return 'blank'
     return card_to_play.name
 
 
-def replay_board_context(params: dict[str, str]) -> dict[str, object]:
+def replay_board_context(req: GameRequest) -> dict[str, object]:
     """Return the context for replay board."""
-    room = get_room_from_name(params.room_name)
+    room = get_room_from_name(req.room_name)
     board = Board().from_json(room.board)
     board.tricks = []
     board.NS_tricks = 0
@@ -162,23 +162,23 @@ def replay_board_context(params: dict[str, str]) -> dict[str, object]:
         hand.unplayed_cards = list(hand.cards)
     # board.current_player = None
     _setup_first_trick(board)
-    suggested_card = _get_suggested_card_name(board, params)
+    suggested_card = _get_suggested_card_name(board, req)
     context = {
         'suggested_card': suggested_card,
     }
-    board_context = get_board_context(params, room, board)
+    board_context = get_board_context(req, room, board)
     return {**context, **board_context}
 
 
-def claim_context(params):
-    room = get_room_from_name(params.room_name)
+def claim_context(req):
+    room = get_room_from_name(req.room_name)
     board = Board().from_json(room.board)
     old_board = Board().from_json(room.board)
 
-    NS_target = _get_NS_target_tricks(board, params)
+    NS_target = _get_NS_target_tricks(board, req)
 
     total_tricks = board.NS_tricks + board.EW_tricks
-    (NS_tricks, EW_tricks) = _play_out_board(params, board, total_tricks)
+    (NS_tricks, EW_tricks) = _play_out_board(req, board, total_tricks)
     (board.NS_tricks, board.EW_tricks) = (NS_tricks, EW_tricks)
 
     if NS_target == board.NS_tricks:
@@ -195,34 +195,34 @@ def claim_context(params):
 
     logger.info(
         'claim',
-        username=params.username,
-        tricks=params.claim_tricks,
+        username=req.username,
+        tricks=req.claim_tricks,
         accepted=accepted)
-    state_context = get_board_context(params, room, board)
+    state_context = get_board_context(req, room, board)
 
     return {**state_context, **claim_context}
 
 
-def _get_NS_target_tricks(board, params):
-    claim_tricks = int(params.claim_tricks)
+def _get_NS_target_tricks(board, req):
+    claim_tricks = int(req.claim_tricks)
     if claim_tricks < 0:
         claim_tricks = 13 - board.NS_tricks - board.EW_tricks + claim_tricks
     return board.NS_tricks + claim_tricks
 
 
-def _play_out_board(params, board, total_tricks):
+def _play_out_board(req, board, total_tricks):
     while total_tricks < 13:
-        suggested_card = get_next_card(board, params)
-        params.card_played = suggested_card
-        card_played_context(params)
-        room = get_room_from_name(params.room_name)
+        suggested_card = get_next_card(board, req)
+        req.card_played = suggested_card
+        card_played_context(req)
+        room = get_room_from_name(req.room_name)
         board = Board().from_json(room.board)
         total_tricks = board.NS_tricks + board.EW_tricks
     return (board.NS_tricks, board.EW_tricks)
 
 
-def compare_scores_context(params):
-    room = get_room_from_name(params.room_name)
+def compare_scores_context(req):
+    room = get_room_from_name(req.room_name)
     board = Board().from_json(room.board)
     old_board = Board().from_json(room.board)
 
@@ -233,11 +233,11 @@ def compare_scores_context(params):
     for seat in SEATS:
         hand = board.hands[seat]
         hand.unplayed_cards = list(hand.cards)
-    get_board_context(params, room, board)  # Save the board
-    (NS_tricks, EW_tricks) = _play_out_board(params, board, 0)
+    get_board_context(req, room, board)  # Save the board
+    (NS_tricks, EW_tricks) = _play_out_board(req, board, 0)
 
     board = old_board
-    state_context = get_board_context(params, room, board)
+    state_context = get_board_context(req, room, board)
 
     claim_context = {
         'NS_tricks_target': NS_tricks,

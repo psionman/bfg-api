@@ -8,14 +8,14 @@ from common.utilities import (
     save_board, three_passes, passed_out, get_bidding_data)
 
 
-def get_board_context(params, room, board) -> dict[str, str]:
-    context = _board_context(params, room, board)
+def get_board_context(req, room, board) -> dict[str, str]:
+    context = _board_context(req, room, board)
     save_board(room, board)
     return context
 
 
-def _board_context(params, room, board) -> dict[str, str]:
-    bb_context = _get_bb_context(params.mode, board)
+def _board_context(req, room, board) -> dict[str, str]:
+    bb_context = _get_bb_context(req.mode, board)
     board_context = _get_board_context(board, room)
     return {**board_context, **bb_context}
 
