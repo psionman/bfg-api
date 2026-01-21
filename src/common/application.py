@@ -10,7 +10,6 @@ from bridgeobjects import CALLS
 from bfgdealer import Board, SOLO_SET_HANDS, DUO_SET_HANDS
 
 from common.constants import PACKAGES
-from common.utilities import get_room_from_name, update_user_activity
 from common.images import CURSOR, CALL_IMAGES, CARD_IMAGES
 from common.archive import (
     get_history_boards_text, rotate_archived_boards, save_boards_file_to_room,
@@ -110,14 +109,12 @@ def card_played(req: GameRequest) -> dict[str, object]:
 def restart_board(req: GameRequest) -> dict[str, object]:
     """Return the context for restart board."""
     logger.info('restart-board', username=req.username)
-    update_user_activity(req)
     return restart_board_context(req)
 
 
 def replay_board(req: GameRequest) -> dict[str, object]:
     """Return the context for replay board."""
     logger.info('replay-board', username=req.username)
-    update_user_activity(req)
     return replay_board_context(req)
 
 
@@ -134,21 +131,19 @@ def undo(req: GameRequest):
 
 
 def get_user_set_hands(req: GameRequest):
-    room = get_room_from_name(req.room_name)
     return {
-        'set_hands': json.loads(room.set_hands),
-        'use_set_hands': room.use_set_hands,
-        'display_hand_type': room.display_hand_type,
+        'set_hands': json.loads(req.room.set_hands),
+        'use_set_hands': req.room.use_set_hands,
+        'display_hand_type': req.room.display_hand_type,
     }
 
 
 def set_user_set_hands(req: GameRequest):
-    room = get_room_from_name(req.room_name)
+    room = req.room
     room.set_hands = json.dumps(req.set_hands)
     room.use_set_hands = req.use_set_hands
     room.display_hand_type = req.display_hand_type
     room.save()
-    update_user_activity(req)
     logger.info(
         'update-set-hands',
         username=req.username,
@@ -185,7 +180,6 @@ def database_update(req: GameRequest) -> None:
     #     'database-update',
     #     username=req.username,
     #     payload=req.payload)
-    update_user_activity(req)
     return None
 
 
@@ -193,7 +187,6 @@ def user_login(req: GameRequest, ip_address: str) -> None:
     user = get_user_from_username(req.username)
     user.logged_in = True
     user.save()
-    update_user_activity(req)
     logger.info(
         'login', username=req.username, ip_address=ip_address)
     return None
@@ -203,7 +196,6 @@ def user_logout(req: GameRequest, ip_address: str) -> None:
     user = get_user_from_username(req.username)
     user.logged_in = False
     user.save()
-    update_user_activity(req)
     logger.info('logout', username=req.username, ip_address=ip_address)
     return None
 

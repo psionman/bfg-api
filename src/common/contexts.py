@@ -3,25 +3,25 @@ from bfgdealer import Board
 from common.bidding_box import BiddingBox
 
 from common.archive import get_pbn_string
-from common.constants import DEFAULT_SUIT_ORDER
+from common.constants import DEFAULT_SUIT_ORDER, Mode
 from common.utilities import (
     save_board, three_passes, passed_out, get_bidding_data)
 
 
-def get_board_context(req, room, board) -> dict[str, str]:
-    context = _board_context(req, room, board)
-    save_board(room, board)
+def get_board_context(req, board) -> dict[str, str]:
+    context = _board_context(req, board)
+    save_board(req.room, board)
     return context
 
 
-def _board_context(req, room, board) -> dict[str, str]:
+def _board_context(req, board) -> dict[str, str]:
     bb_context = _get_bb_context(req.mode, board)
-    board_context = _get_board_context(board, room)
+    board_context = _get_board_context(board, req.room)
     return {**board_context, **bb_context}
 
 
 def _get_bb_context(mode: str, board: Board) -> dict[str, str]:
-    add_warnings = mode == 'duo'
+    add_warnings = mode == Mode.DUO
     (bb_names, bb_extra_names) = BiddingBox().refresh(board.bid_history,
                                                       add_warnings)
     return {
@@ -61,8 +61,8 @@ def _get_board_context(board: Board, room: int) -> dict[str, object]:
         'trick_count': len(board.tricks),
         'trick_cards': [card.name for card in board.tricks[-1].cards],
         'trick_suit': trick_suit,
-        'ns_tricks': board.ns_tricks,
-        'ew_tricks': board.ew_tricks,
+        'ns_tricks': board.NS_tricks,
+        'ew_tricks': board.EW_tricks,
         'score': _get_score(board),
         'dummy': _get_dummy_seat(board),
         'board_pbn': get_pbn_string(board),
@@ -167,7 +167,7 @@ def _get_previous_player(board: Board) -> str:
 
 
 def _get_score(board: Board) -> int:
-    if board.ns_tricks + board.ew_tricks == 13:
+    if board.NS_tricks + board.EW_tricks == 13:
         return _calculate_score(board)
     return 0
 
@@ -189,11 +189,11 @@ def _calculate_score(board: Board) -> int:
     """Return the score for the board."""
     vulnerable = False
     if board.contract.declarer in 'NS':
-        declarers_tricks = board.ns_tricks
+        declarers_tricks = board.NS_tricks
         if board.vulnerable in ['NS', 'Both', 'All']:
             vulnerable = True
     else:
-        declarers_tricks = board.ew_tricks
+        declarers_tricks = board.EW_tricks
         if board.vulnerable in ['EW', 'Both', 'All']:
             vulnerable = True
     return board.contract.score(declarers_tricks, vulnerable)

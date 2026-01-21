@@ -18,6 +18,7 @@ class GameRequest:
     board_id: str = ""
     seat: str = "N"
     room_name: str = ""
+    room: Room = None,
     bid: str = ""
     generate_contract: bool = False
     set_hands: list = field(default_factory=list)
@@ -51,8 +52,15 @@ class GameRequest:
 
         self.seat_index = SEATS.index(self.seat)
 
-        if self.mode not in {"solo", "duo", "solo-no-comments"}:
+        if self.mode not in {"solo", "duo", "solo-no-comments", ''}:
+            print(f"{self.mode=}")
             raise ValueError(f"Invalid mode: {self.mode}")
+        self._update_user_activity()
+
+    def _update_user_activity(self) -> None:
+        user = get_user_from_username(self.username)
+        user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
+        user.save()
 
 
 def req_from_json(raw_params: str) -> GameRequest:
@@ -63,6 +71,7 @@ def req_from_json(raw_params: str) -> GameRequest:
         board_id=data.get("board_id", ""),
         seat=data.get("seat", "N"),
         room_name=data.get("room_name", ""),
+        room=_get_room_from_name(data.get("room_name", "")),
         bid=data.get("bid", ""),
         generate_contract=bool(data.get("generate_contract", False)),
         set_hands=data.get("set_hands", []),
@@ -104,7 +113,7 @@ class UserProxy():
         return str(self.__dict__)
 
 
-def get_room_from_name(name: str) -> Room:
+def _get_room_from_name(name: str) -> Room:
     return Room.objects.get_or_create(name=name)[0]
 
 
@@ -113,10 +122,10 @@ def get_user_from_username(username: str) -> User:
 
 
 def update_user_activity(req: GameRequest) -> None:
-    user = get_user_from_username(req.username)
-    user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
-    user.save()
-
+#     user = get_user_from_username(req.username)
+#     user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
+#     user.save()
+    ...
 
 def three_passes(bid_history: list[str]) -> bool:    # X
     """Return True if there are 3 passes."""
@@ -235,3 +244,8 @@ def _can_redouble(calls: list) -> bool:
             and Call(calls[-1]).is_pass
         )
     )
+
+
+def merge_context(base: dict, **extra) -> dict:
+    base.update(extra)
+    return base

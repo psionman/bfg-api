@@ -1,4 +1,9 @@
 """Constants for BfG."""
+try:
+    from enum import StrEnum
+except ImportError:
+    from backports.strenum import StrEnum
+from enum import auto
 
 DEFAULT_SUIT_ORDER = ['S', 'H', 'C', 'D']
 
@@ -31,3 +36,9 @@ for index, item in enumerate(source_names):
 SOURCES = sources
 
 CONTRACT_BASE = 6
+
+
+class Mode(StrEnum):
+    SOLO = auto()
+    SOLO_NO_COMMENTS = auto()
+    DUO = auto()

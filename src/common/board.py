@@ -27,10 +27,10 @@ from bfgdealer import DealerSolo, DealerDuo, Board, Trick
 
 from common.bidding import get_initial_auction
 from common.utilities import (
-    get_unplayed_cards_for_board_hands, get_room_from_name, passed_out, GameRequest,
-    get_current_player, update_user_activity)
-from common.contexts import get_board_context, get_pbn_string
-from common.constants import SOURCES, CONTRACT_BASE
+    get_unplayed_cards_for_board_hands, passed_out,
+    GameRequest, get_current_player, merge_context)
+from common.contexts import get_board_context
+from common.constants import SOURCES, CONTRACT_BASE, Mode
 from common.archive import save_board_to_archive, get_board_from_archive
 from common.undo_cardplay import undo_cardplay
 
@@ -46,21 +46,28 @@ def get_new_board(req: GameRequest) -> dict[str, object]:
     initialises auction, updates user activity, saves the board to archive, and
     returns a dictionary containing the board state and context.
     """
-    room = get_room_from_name(req.room_name)
+    room = req.room
     room.board_number += 1
+
     board = _get_new_board(req)
     board.description = str(uuid.uuid1())
     board.vulnerable = VULNERABILITY[room.board_number % 16]
     board.dealer = SEATS[(room.board_number - 1) % 4]
-    update_user_activity(req)
+    board.auction = get_initial_auction(req, board, [])
+    save_board_to_archive(room, board)
+
     logger.info(
         'new-board',
         username=req.username,
         pbn=board.create_pbn_list()
         )
 
-    board.auction = get_initial_auction(req, board, [])
-    save_board_to_archive(room, board)
+    _log_initial_bids(board)
+
+    return get_board_context(req, board)
+
+
+def _log_initial_bids(board: Board) -> None:
     seat_index = SEATS.index(board.dealer)
     for call in board.auction.calls:
         logger.info(
@@ -70,10 +77,9 @@ def get_new_board(req: GameRequest) -> dict[str, object]:
             seat=SEATS[seat_index])
         seat_index += 1
         seat_index %= 4
-    return get_board_context(req, room, board)
 
 
-def restart_board_context(req) -> dict:
+def restart_board_context(req: GameRequest) -> dict:
     """
     Reset an existing board for a room and return the updated board context.
 
@@ -81,21 +87,23 @@ def restart_board_context(req) -> dict:
     unplayed cards for all hands. Returns a dictionary representing the current
     board context.
     """
-    room = get_room_from_name(req.room_name)
-    board = Board().from_json(room.board)
-    board.tricks =[Trick()]
+    board = Board().from_json(req.room.board)
+    board.tricks = [Trick()]
     board.auction = Auction()
     board.auction = get_initial_auction(req, board, [])
     board.current_player = None
-    board.ns_tricks, board.ew_tricks = 0, 0
+    board.NS_tricks, board.EW_tricks = 0, 0
+
     for hand in board.hands.values():
         hand.unplayed_cards = list(hand.cards)
+
     for trick in board.tricks:
         trick.cards = []
-    return get_board_context(req, room, board)
+
+    return get_board_context(req, board)
 
 
-def _get_new_board(req: GameRequest) -> tuple[int, Board]:
+def _get_new_board(req: GameRequest) -> Board:
     """
     Select the appropriate new board based on provided parameters.
 
@@ -109,13 +117,13 @@ def _get_new_board(req: GameRequest) -> tuple[int, Board]:
     return _get_random_board()
 
 
-def _get_set_hand(req: GameRequest) -> tuple[Board, int]:
+def _get_set_hand(req: GameRequest) -> Board:
     """
     Generate a board from a pre-set hand for a room.
 
     Uses dealer engine and sets the board's source to 'set-hands'.
     """
-    room = get_room_from_name(req.room_name)
+    room = req.room
     set_hands = json.loads(room.set_hands)
 
     (dealer_engine, dealer) = _get_dealer_engine(req, room.board_number)
@@ -132,7 +140,7 @@ def _get_dealer_engine(req: GameRequest,
 
     Chooses between DealerSolo and DealerDuo depending on the game mode.
     """
-    if req.mode == 'duo':
+    if req.mode == Mode.DUO:
         dealer = SEATS[board_number % 4]
         dealer_engine = DealerDuo(dealer)
     else:
@@ -169,16 +177,16 @@ def get_room_board(req: GameRequest) -> dict[str, object]:
 
     Includes bid history, contract, tricks, stage, and other relevant state.
     """
-    room = get_room_from_name(req.room_name)
+    room = req.room
     board = Board().from_json(room.board)
 
-    state_context = get_board_context(req, room, board)
-    (trick_cards, trick_leader, trick_suit) = _get_trick_details(board)
+    return _room_board_context(req, board)
 
-    # Assign trick cards in case that new trick has no cards yet.
-    if not trick_cards and len(board.tricks) > 1:
-        trick_cards = [card.name for card in board.tricks[-2].cards]
-        trick_leader = board.tricks[-2].leader
+
+def _room_board_context(req: GameRequest, board: Board) -> dict[str, object]:
+
+    state_context = get_board_context(req, board)
+    (trick_cards, trick_leader, trick_suit) = _mutate_trick_state(board)
 
     specific_context = {
         'bid_history': board.bid_history,
@@ -195,29 +203,16 @@ def get_room_board(req: GameRequest) -> dict[str, object]:
         'source': board.source,
         'contract_target': CONTRACT_BASE + board.contract.level,
     }
-    return {**state_context, **specific_context}
+    return merge_context(state_context, **specific_context)
 
 
-def get_history_board(req) -> Board:
-    """
-    Return a board restored from the archive for a room and update context.
-
-    Restores bid history, auction, and logs the event.
-    """
-    room = get_room_from_name(req.room_name)
-    board = get_board_from_archive(req)
-
-    # board.display_stats()
-    logger.info(
-        'history-board',
-        username=req.username,
-        pbn=board.create_pbn_list())
-
-    board.auction = get_initial_auction(req, board, [])
-    pbn_string = get_pbn_string(board)
-    board.source = SOURCES['history']
-    update_user_activity(req)
-    return get_board_context(req, room, board)
+def _mutate_trick_state(board: Board) -> tuple[list, str, str]:
+    """Assign trick cards in case that new trick has no cards yet."""
+    (trick_cards, trick_leader, trick_suit) = _get_trick_details(board)
+    if not trick_cards and len(board.tricks) > 1:
+        trick_cards = [card.name for card in board.tricks[-2].cards]
+        trick_leader = board.tricks[-2].leader
+    return (trick_cards, trick_leader, trick_suit)
 
 
 def _get_trick_details(board: Board) -> tuple[list[str], str, str]:
@@ -227,47 +222,75 @@ def _get_trick_details(board: Board) -> tuple[list[str], str, str]:
     Returns the trick cards, leader, and suit if available.
     """
     trick_cards, trick_leader, trick_suit = [], '', ''
-    if board.tricks:
-        if board.tricks[-1].cards:
-            trick_cards = [card.name for card in board.tricks[-1].cards]
+    if not board.tricks:
+        return (trick_cards, trick_leader, trick_suit)
+
+    if board.tricks[-1].cards:
+        trick_cards = [card.name for card in board.tricks[-1].cards]
+        trick_leader = board.tricks[-1].leader
+        trick_suit = board.tricks[-1].suit.name
+    elif len(board.tricks) > 1:
+        if board.tricks[-1].leader:
             trick_leader = board.tricks[-1].leader
-            trick_suit = board.tricks[-1].suit.name
-        elif len(board.tricks) > 1:
-            if board.tricks[-1].leader:
-                trick_leader = board.tricks[-1].leader
-            else:
-                trick_leader = board.tricks[-2].leader
+        else:
+            trick_leader = board.tricks[-2].leader
     return (trick_cards, trick_leader, trick_suit)
 
 
-def get_board_from_pbn(req):
+def get_history_board(req: GameRequest) -> dict[str, object]:
+    """
+    Return a board restored from the archive for a room and update context.
+
+    Restores bid history, auction, and logs the event.
+    """
+    board = get_board_from_archive(req)
+
+    # board.display_stats()
+
+    board.auction = get_initial_auction(req, board, [])
+    board.source = SOURCES['history']
+
+    logger.info(
+        'history-board',
+        username=req.username,
+        pbn=board.create_pbn_list())
+    return get_board_context(req, board)
+
+
+def get_board_from_pbn(req: GameRequest) -> dict[str, object]:
     """
     Generate a board from a PBN string and return its context.
 
     Updates unplayed cards, assigns source as 'pbn', and logs the board.
     """
-    """Return board from a PBN string."""
-    # room = get_room_from_name(req.room_name)
     board = _get_board_from_pbn_string(req)
     if not board:
         return {'error': 'Invalid pbn string'}
 
     board.source = SOURCES['pbn']
     get_unplayed_cards_for_board_hands(board)
-    # board.display_stats()
     logger.info(
         'pbn-board',
         username=req.username,
         pbn=board.create_pbn_list()
     )
+    _update_room_for_pbn(req)
 
-    trick_context = _trick_context_for_pbn_board(board)
-    room = get_room_from_name(req.room_name)
+    return _get_context_for_pbn_board(req, board)
+
+
+def _update_room_for_pbn(req: GameRequest) -> None:
+    room = req.room
     room.saved_pbn = req.pbn_text
     room.save()
-    update_user_activity(req)
-    board_context = get_board_context(req, room, board)
-    return {**board_context, **trick_context}
+
+
+def _get_context_for_pbn_board(
+        req: GameRequest, board: Board) -> dict[str, object]:
+    trick_context = _trick_context_for_pbn_board(board)
+    board_context = get_board_context(req, board)
+    return merge_context(board_context, **trick_context)
+
 
 
 def _trick_context_for_pbn_board(board: Board) -> dict[str, str]:
@@ -279,14 +302,14 @@ def _trick_context_for_pbn_board(board: Board) -> dict[str, str]:
     if not board.tricks:
         trick = board.setup_first_trick_for_board()
         board.tricks.append(trick)
-    trick_context = _play_initial_cards(board)
+    trick_context = _apply_initial_cards(board)
 
     if suggested_card := next_card(board):
         trick_context['suggested_card'] = suggested_card.name
     return trick_context
 
 
-def _play_initial_cards(board: Board) -> dict[str, str]:
+def _apply_initial_cards(board: Board) -> dict[str, str]:
     """
     Play the initial cards on a board and update trick context.
 
@@ -319,21 +342,35 @@ def _trick_context(trick: Trick) -> dict[str, object]:
     }
 
 
-def _get_board_from_pbn_string(req: GameRequest) -> Board:
+def _get_board_from_pbn_string(req: GameRequest) -> Board | None:
     """
     Parse a PBN string and return a Board object.
 
     Handles line breaks, invalid boards, and restores auction and unplayed
     cards.
     """
-    pbn_list = []
-    if '\n' in req.pbn_text:
-        pbn_list_raw = (req.pbn_text).split('\n')
-        pbn_list.extend(item.replace('<br>', '').strip()
-                        for item in pbn_list_raw)
-    elif '<br>' in req.pbn_text:
-        pbn_list_raw = (req.pbn_text).split('<br>')
-        pbn_list.extend(item.strip() for item in pbn_list_raw)
+    board = _parse_pbn_text(req)
+    if not board:
+        return None
+    _mutate_board_auction(req, board)
+    get_unplayed_cards_for_board_hands(board)
+    return board
+
+
+def _mutate_board_auction(req: GameRequest, board: Board) -> None:
+    bid_history = [call.name for call in board.auction.calls]
+    board.bid_history = bid_history
+
+    # This is necessary because the contract gets
+    # lost after the call to get_initial_auction
+    contract = board._contract
+    board.auction = get_initial_auction(req, board, bid_history=bid_history)
+    board.contract = contract
+
+
+def _parse_pbn_text(req: GameRequest) -> Board | None:
+    pbn_list = _get_pbn_list(req)
+
     if not pbn_list:
         return None
     try:
@@ -343,18 +380,19 @@ def _get_board_from_pbn_string(req: GameRequest) -> Board:
 
     board = Board()
     board.get_attributes_from_board(raw_board)
-    bid_history = [call.name for call in board.auction.calls]
-    board.bid_history = bid_history
-
-    # This is necessary because the contract gets
-    # lost after the call to get_initial_auction
-    contract = board._contract
-
-    board.auction = get_initial_auction(req, board, bid_history=bid_history)
-
-    board.contract = contract
-    get_unplayed_cards_for_board_hands(board)
     return board
+
+
+def _get_pbn_list(req: GameRequest) -> list[str]:
+    pbn_list = []
+    if '\n' in req.pbn_text:
+        pbn_list_raw = (req.pbn_text).split('\n')
+        pbn_list.extend(item.replace('<br>', '').strip()
+                        for item in pbn_list_raw)
+    elif '<br>' in req.pbn_text:
+        pbn_list_raw = (req.pbn_text).split('<br>')
+        pbn_list.extend(item.strip() for item in pbn_list_raw)
+    return pbn_list
 
 
 def _get_leader(declarer: str) -> str:
@@ -375,45 +413,52 @@ def update_trick_scores(board: Board, trick: Trick):
     if not trick.winner:
         return
     if trick.winner in 'NS':
-        board.ns_tricks += 1
+        board.NS_tricks += 1
     elif trick.winner in 'EW':
-        board.ew_tricks += 1
+        board.EW_tricks += 1
 
 
-def undo_context(req):
+def undo_context(req: GameRequest) -> dict[str, object]:
     """
     Undo the last card play or bid and return the updated board context.
 
     Updates the auction, bid history, current player, and user activity.
     """
-    room = get_room_from_name(req.room_name)
-    board = Board().from_json(room.board)
-    initial_state = False
-    update_user_activity(req)
+    board = Board().from_json(req.room.board)
 
     if board.contract.name:
-        logger.info('undo-card', username=req.username)
-        undo_cardplay(board, req.mode)
-        board.current_player = get_current_player(board.tricks[-1])
+        initial_state = _undo_card_play(req, board)
     else:
-        new_bid_history = _undo_bids(board, req)
-        auction = get_initial_auction(req, board, [])
+        initial_state = _undo_bidding(req, board)
 
-        # Restore bod_history after "get_initial_auction()"
-        board.bid_history = new_bid_history
-
-        calls = [call.name for call in auction.calls]
-        if calls == board.bid_history:
-            initial_state = True
-
-        logger.info('undo-bid', username=req.username)
-
-    context = get_board_context(req, room, board)
+    context = get_board_context(req, board)
     context['initial_state'] = initial_state
     return context
 
 
-def _undo_bids(board, req: GameRequest) -> None:
+def _undo_card_play(req: GameRequest, board: Board) -> bool:
+    undo_cardplay(board, req.mode)
+    board.current_player = get_current_player(board.tricks[-1])
+    logger.info('undo-card', username=req.username)
+    return False
+
+
+def _undo_bidding(req: GameRequest, board: Board) -> bool:
+    new_bid_history = _undo_bids(board, req)
+    auction = get_initial_auction(req, board, [])
+
+    # Restore bid_history after "get_initial_auction()"
+    board.bid_history = new_bid_history
+
+    logger.info('undo-bid', username=req.username)
+
+    calls = [call.name for call in auction.calls]
+    if calls == board.bid_history:
+        return True
+    return False
+
+
+def _undo_bids(board, req: GameRequest) -> list:
     """
     Undo a sequence of bids until reaching the specified bidder seat.
 

@@ -162,11 +162,11 @@ def _remove_current_trick(board, mode):
 
 def _adjust_score(board):
     # Adjust the score after undo
-    board.ns_tricks = 0
-    board.ew_tricks = 0
+    board.NS_tricks = 0
+    board.EW_tricks = 0
     for trick in board.tricks:
         if trick.winner:
             if trick.winner in 'NS':
-                board.ns_tricks += 1
+                board.NS_tricks += 1
             if trick.winner in 'EW':
-                board.ew_tricks += 1
+                board.EW_tricks += 1

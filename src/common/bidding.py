@@ -14,9 +14,9 @@ from bfgdealer import Board
 from common.bidding_box import BiddingBox
 from common.models import Room
 from common.utilities import (
-    get_room_from_name, three_passes, passed_out, get_bidding_data, GameRequest,
-    update_user_activity)
-from common.constants import SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS
+    three_passes, passed_out, get_bidding_data, GameRequest)
+from common.constants import (
+    SUGGEST_BID_TEXT, YOUR_SELECTION_TEXT, WARNINGS, Mode)
 from common.archive import get_pbn_string
 from common.contexts import get_board_context
 
@@ -31,7 +31,7 @@ def get_bid_made(req: GameRequest) -> dict[str, str]:
 
     Routes to duo or solo bid handling depending on the game mode.
     """
-    if req.mode == 'duo':
+    if req.mode == Mode.DUO:
         return bid_made_duo(req)
     return bid_made_solo(req)
 
@@ -43,8 +43,7 @@ def bid_made_duo(req: GameRequest) -> dict[str, str]:
     Updates bid history, determines declarer and contract, and updates the
     BiddingBox and board context.
     """
-    room = get_room_from_name(req.room_name)
-    board = Board().from_json(room.board)
+    board = Board().from_json(req.room.board)
 
     _get_opps_bid(req, board)
 
@@ -54,14 +53,14 @@ def bid_made_duo(req: GameRequest) -> dict[str, str]:
         (board.declarer, board.contract) = _get_declarer_contract(board)
 
     board.warning = req.bid if req.bid in WARNINGS else None
-    room.board = board.to_json()
-    room.save()
+    req.room.board = board.to_json()
+    req.room.save()
 
     (bb_names, bb_extra_names) = BiddingBox().refresh(board.bid_history,
                                                       add_warnings=True)
     bidding_params = get_bidding_data(board)
 
-    state_context = get_board_context(req, room, board)
+    state_context = get_board_context(req, board)
     specific_context = {
         'bid_history': board.bid_history,
         'contract': board.contract.name,
@@ -84,7 +83,7 @@ def bid_made_solo(req: GameRequest) -> dict[str, str]:
     Validates the bid, compares with suggested bid, and returns comments
     and strategy text.
     """
-    room = get_room_from_name(req.room_name)
+    room = req.room
     board = Board().from_json(room.board)
 
     suggested_bid = board.players[req.seat].make_bid(False)
@@ -95,7 +94,7 @@ def bid_made_solo(req: GameRequest) -> dict[str, str]:
     room.suggested_bid = suggested_bid.name
     room.save()
 
-    state_context = get_board_context(req, room, board)
+    state_context = get_board_context(req, board)
     bidding_params = get_bidding_data(board)
 
     specific_context = {
@@ -207,7 +206,7 @@ def _get_initial_bid_parameters(
 
     seat_diff = dealer_index - seat_index - 1
 
-    if req.mode == 'duo':
+    if req.mode == Mode.DUO:
         initial_count = 1
         mod_value = 2
     else:
@@ -223,12 +222,11 @@ def get_bid_context(
 
     Updates bid history, board state, BiddingBox, and returns combined context.
     """
-    room = get_room_from_name(req.room_name)
+    room = req.room
     board = Board().from_json(room.board)
     bid = _update_bid_history(room, board, use_suggested_bid)
     logger.info(
         'bid-made', call=bid, username=req.username, seat=req.seat)
-    update_user_activity(req)
     _update_board_other_bids(board, req)
     room.board = board.to_json()
     room.save()
@@ -236,7 +234,7 @@ def get_bid_context(
     (bb_names, bb_extra_names) = BiddingBox().refresh(board.bid_history,
                                                       add_warnings=False)
 
-    state_context = get_board_context(req, room, board)
+    state_context = get_board_context(req, board)
     specific_context = {
         'bid_history': board.bid_history,
         'three_passes': three_passes(board.bid_history),

@@ -97,8 +97,8 @@ def test_undo_solo_NS_declarer_EW_leader_only_one_card_in_trick():
     assert Card('6C') not in board.hands['N'].unplayed_cards
     assert Card('2C') not in board.hands['W'].unplayed_cards
     assert Card('KC') not in board.hands['E'].unplayed_cards
-    Board.ns_tricks = 2
-    Board.ew_tricks = 2
+    Board.NS_tricks = 2
+    Board.EW_tricks = 2
     context = _card_undo_context(board_id, 'solo')
     assert '6C' in context['unplayed_card_names']['N']
     assert 'KC' in context['unplayed_card_names']['E']
