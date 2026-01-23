@@ -35,7 +35,7 @@ def static_data(ip_address: str) -> dict[str, object]:
     logger.info('Static data', ip_address=ip_address)
     context = {
         'card_images': CARD_IMAGES,
-        'call_images': CALL_IMAGES,
+        # 'call_images': CALL_IMAGES,
         'cursor': CURSOR,
         'calls': CALLS,
         'solo_set_hands': SOLO_SET_HANDS,
@@ -43,8 +43,25 @@ def static_data(ip_address: str) -> dict[str, object]:
         'sources': SOURCES,
         'versions': package_versions(),
     }
-    context['call_images']['A'] = context['call_images']['alert']
+    # context['call_images']['A'] = context['call_images']['alert']
     return context
+
+
+def user_login(req: GameRequest, ip_address: str) -> None:
+    user = get_user_from_username(req.username)
+    user.logged_in = True
+    user.save()
+    logger.info(
+        'login', username=req.username, ip_address=ip_address)
+    return None
+
+
+def user_logout(req: GameRequest, ip_address: str) -> None:
+    user = get_user_from_username(req.username)
+    user.logged_in = False
+    user.save()
+    logger.info('logout', username=req.username, ip_address=ip_address)
+    return None
 
 
 def new_board(req: GameRequest) -> dict[str, object]:
@@ -180,23 +197,6 @@ def database_update(req: GameRequest) -> None:
     #     'database-update',
     #     username=req.username,
     #     payload=req.payload)
-    return None
-
-
-def user_login(req: GameRequest, ip_address: str) -> None:
-    user = get_user_from_username(req.username)
-    user.logged_in = True
-    user.save()
-    logger.info(
-        'login', username=req.username, ip_address=ip_address)
-    return None
-
-
-def user_logout(req: GameRequest, ip_address: str) -> None:
-    user = get_user_from_username(req.username)
-    user.logged_in = False
-    user.save()
-    logger.info('logout', username=req.username, ip_address=ip_address)
     return None
 
 
