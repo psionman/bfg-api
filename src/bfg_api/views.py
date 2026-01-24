@@ -1,7 +1,13 @@
 import json
 
 from django.views import View
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.http import HttpResponse, JsonResponse
 from django.http import JsonResponse
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import never_cache
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,27 +18,42 @@ from common.serializers import RoomSerializer
 from common.utilities import req_from_json
 
 
+@ensure_csrf_cookie
+@never_cache
+def ensure_csrf(request):
+    # response = JsonResponse({"status": "csrf cookie set"})
+    # response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    # response["Pragma"] = "no-cache"
+    # return response
+    # return JsonResponse({"status": "csrftoken set"})
+    response = JsonResponse({"status": "csrftoken issued"})
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def handle_post_request(request, func, *args) -> JsonResponse:
+    req = req_from_json(request.body)
+    return JsonResponse(func(req, *args), safe=False)
+
+
 def handle_request(params: str, func, *args) -> JsonResponse:
     req = req_from_json(params)
     return JsonResponse(func(req, *args), safe=False)
 
 
 class StaticData(View):
-    @staticmethod
-    def get(request, params):
+    def get(self, request, params):
         context = app.static_data(request.META.get('REMOTE_ADDR'))
-        print(type(context))
         return JsonResponse(context, safe=False)
 
 
 class UserLogin(View):
-    @staticmethod
-    def post(request, params):
+    def post(self, request):
         return handle_request(
-            params, app.user_login, request.META.get('REMOTE_ADDR'))
+            request.body,
+            app.user_login, request.META.get('REMOTE_ADDR'))
 
-    @staticmethod
-    def get(request, params):
+    def get(self, request, params):
         return UserLogin.post(request, params)
 
 
@@ -45,7 +66,6 @@ class UserLogout(View):
     @staticmethod
     def get(request, params):
         return UserLogout.post(request, params)
-
 
 
 class UserSeat(View):
@@ -157,7 +177,7 @@ class BidMade(View):
 class UseSuggestedBid(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.use_bid)
+        return handle_request(params, app.use_bid, True)
 
     @staticmethod
     def get(request, params):
@@ -167,7 +187,7 @@ class UseSuggestedBid(View):
 class UseOwnBid(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.use_bid)
+        return handle_request(params, app.use_bid, False)
 
     @staticmethod
     def get(request, params):
@@ -196,117 +216,144 @@ class CardPlayed(View):
 
 class RestartBoard(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.restart_board)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.restart_board(req)
-        return JsonResponse(context, safe=False)
+        return RestartBoard.post(request, params)
 
 
 class ReplayBoard(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.replay_board)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.replay_board(req)
-        return JsonResponse(context, safe=False)
+        return ReplayBoard.post(request, params)
 
 
 class UseHistoryBoard(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.history_board)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.history_board(req)
-        return JsonResponse(context, safe=False)
+        return UseHistoryBoard.post(request, params)
 
 
 class RotateBoards(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.rotate_boards)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.rotate_boards(req)
-        return JsonResponse(context, safe=False)
+        return RotateBoards.post(request, params)
+
 
 
 class Claim(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.claim)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.claim(req)
-        return JsonResponse(context, safe=False)
+        return Claim.post(request, params)
 
 
 class CompareScores(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.compare_scores)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.compare_scores(req)
-        return JsonResponse(context, safe=False)
+        return CompareScores.post(request, params)
 
 
 class Undo(View):
     @staticmethod
-    def get(request, params):
-        req = req_from_json(params)
-        context = app.undo(req)
-        return JsonResponse(context, safe=False)
+    def post(request, params):
+        return handle_request(params, app.undo)
 
-
-class GetParameters(View):
     @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = {
-            'slice': 200
-        }
-        return JsonResponse(context, safe=False)
+        return Undo.post(request, params)
 
 
-class SaveBoardFile(View):
-    @staticmethod
-    def get(request, params):
-        req = req_from_json(params)
-        context = {'boards_saved': False, }
-        if req.pbn_text:
-            context = app.save_board_file(req)
-        return JsonResponse(context, safe=False)
+# class GetParameters(View):
+#     @staticmethod
+#     def get(request, params):
+#         req = req_from_json(params)
+#         context = {
+#             'slice': 200
+#         }
+#         return JsonResponse(context, safe=False)
+
+
+# class SaveBoardFile(View):
+#     @staticmethod
+#     def get(request, params):
+#         req = req_from_json(params)
+#         context = {'boards_saved': False, }
+#         if req.pbn_text:
+#             context = app.save_board_file(req)
+#         return JsonResponse(context, safe=False)
 
 
 class Versions(View):
     @staticmethod
-    def get(request):
-        context = app.package_versions()
-        return JsonResponse(context, safe=False)
+    def post(request, params):
+        return handle_request(params, app.package_versions)
+
+    @staticmethod
+    def get(request, params):
+        return Versions.post(request, params)
 
 
 class MessageSent(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.message_sent)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.message_sent(req)
-        return JsonResponse(context, safe=False)
+        return MessageSent.post(request, params)
 
 
 class MessageReceived(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.message_received)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.message_received(req)
-        return JsonResponse(context, safe=False)
+        return MessageReceived.post(request, params)
 
 
 class DatabaseUpdate(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.database_update)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.database_update(req)
-        return JsonResponse(context, safe=False)
+        return DatabaseUpdate.post(request, params)
 
 
 class UserStatus(View):
     @staticmethod
+    def post(request, params):
+        return handle_request(params, app.get_user_status)
+
+    @staticmethod
     def get(request, params):
-        req = req_from_json(params)
-        context = app.get_user_status(req)
-        return JsonResponse(context, safe=False)
+        return UserStatus.post(request, params)
+
 
 
 class RoomListApiView(APIView):

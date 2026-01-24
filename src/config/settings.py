@@ -26,11 +26,46 @@ SECRET_KEY = 'django-insecure-e3=69=6&$^($a(ksyf7nt1#kvz#)&dd-ei&y2_g0))(&)-0lm$
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
+    'localhost'
     'www.bidforgame.com',
     'bidforgame.com',
     'bidforgame.co.uk']
 
-CORS_ORIGIN_ALLOW_ALL = True
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8888',          # ← your frontend/dev server
+    'http://127.0.0.1:8888',          # sometimes browsers send this
+    # If you ever use HTTPS locally (e.g. mkcert or self-signed)
+    # 'https://localhost:8888',
+    # 'https://127.0.0.1:8888',
+
+    # Production ones – include scheme!
+    'https://www.bidforgame.com',
+    'https://bidforgame.com',
+    'https://bidforgame.co.uk',
+    # If you have subdomains or variants later: 'https://*.bidforgame.com'
+]
+
+# CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8888",     # your frontend port
+    "http://127.0.0.1:8888",
+    # Add production: "https://www.bidforgame.com", etc.
+]
+
+CORS_ALLOW_CREDENTIALS = True  # Required for cookies to be sent/received
+CSRF_COOKIE_SECURE = False  # Allow http (not https)
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False  # If you need JS to read it (usually not)
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = False  # True only in HTTPS
+CSRF_USE_SESSIONS = False
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "http")
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -58,7 +93,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

@@ -11,10 +11,11 @@ from . import views
 
 urlpatterns = [
     # Static data
+    path('ensure-csrf/', views.ensure_csrf),
     path('static-data/<str:params>/', views.StaticData.as_view()),
 
     # user login/out
-    path('user-login/<str:params>/', views.UserLogin.as_view()),
+    path('user-login/', views.UserLogin.as_view()),
     path('user-seat/<str:params>/', views.UserSeat.as_view()),
     path('user-logout/<str:params>/', views.UserLogout.as_view()),
     path('user-status/<str:params>/', views.UserStatus.as_view()),
@@ -42,7 +43,7 @@ urlpatterns = [
     # path('save-board-file/<str:params>/', views.SaveBoardFilePut.as_view()),
     path('get-archive-list/<str:params>/', views.GetArchiveList.as_view()),
     path('get-board-file/<str:params>/', views.GetBoardFile.as_view()),
-    path('save-board-file/<str:params>/', views.SaveBoardFile.as_view()),
+    # path('save-board-file/<str:params>/', views.SaveBoardFile.as_view()),
 
     # Bids
     path('bid-made/<str:params>/', views.BidMade.as_view()),
@@ -58,7 +59,7 @@ urlpatterns = [
     # Utilities
     path('undo/<str:params>/', views.Undo.as_view()),
     path('versions/', views.Versions.as_view()),
-    path('get-parameters/<str:params>/', views.GetParameters.as_view()),
+    # path('get-parameters/<str:params>/', views.GetParameters.as_view()),
     path('database-update/<str:params>/', views.DatabaseUpdate.as_view()),
 
 
