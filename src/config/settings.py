@@ -8,11 +8,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 import structlog
+from dotenv import load_dotenv
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+
+load_dotenv()
+
+TESTING = False if os.getenv('TESTING', 'False') == 'False' else True
+
+DEBUG = TESTING
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -45,7 +51,6 @@ CSRF_TRUSTED_ORIGINS = [
     # If you have subdomains or variants later: 'https://*.bidforgame.com'
 ]
 
-# CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8888",     # your frontend port
@@ -53,18 +58,15 @@ CORS_ALLOWED_ORIGINS = [
     # Add production: "https://www.bidforgame.com", etc.
 ]
 
+if TESTING:
+    CSRF_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+else:
+    CSRF_COOKIE_SAMESITE = "None"  # Not sure about this in production
+    CSRF_COOKIE_SECURE = True  # True only in HTTPS
+
 CORS_ALLOW_CREDENTIALS = True  # Required for cookies to be sent/received
-CSRF_COOKIE_SECURE = False  # Allow http (not https)
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_HTTPONLY = False  # If you need JS to read it (usually not)
-CSRF_COOKIE_NAME = 'csrftoken'
-CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
-CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SECURE = False  # True only in HTTPS
-CSRF_USE_SESSIONS = False
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "http")
 
 
 # Application definition

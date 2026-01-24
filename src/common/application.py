@@ -30,7 +30,7 @@ from _version import __version__ as api_version
 logger = structlog.get_logger()
 
 
-def static_data(ip_address: str) -> dict[str, object]:
+def static_data(req: GameRequest, ip_address: str) -> dict[str, object]:
     """Return a dict of static data."""
     logger.info('Static data', ip_address=ip_address)
     context = {

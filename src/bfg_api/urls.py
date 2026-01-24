@@ -12,12 +12,12 @@ from . import views
 urlpatterns = [
     # Static data
     path('ensure-csrf/', views.ensure_csrf),
-    path('static-data/<str:params>/', views.StaticData.as_view()),
+    path('static-data/', views.StaticData.as_view()),
 
     # user login/out
     path('user-login/', views.UserLogin.as_view()),
-    path('user-seat/<str:params>/', views.UserSeat.as_view()),
-    path('user-logout/<str:params>/', views.UserLogout.as_view()),
+    path('user-seat/', views.UserSeat.as_view()),
+    path('user-logout/', views.UserLogout.as_view()),
     path('user-status/<str:params>/', views.UserStatus.as_view()),
 
     # REST api
@@ -25,34 +25,34 @@ urlpatterns = [
     path('api/<str:room_name>', views.RoomDetailApiView.as_view()),
 
     # Room
-    path('get-user-set-hands/<str:params>/', views.GetUserSetHands.as_view()),
-    path('set-user-set-hands/<str:params>/', views.SetUserSetHands.as_view()),
+    path('get-user-set-hands/', views.GetUserSetHands.as_view()),
+    path('set-user-set-hands/', views.SetUserSetHands.as_view()),
 
     # Boards
-    path('new-board/<str:params>/', views.NewBoard.as_view()),
-    path('restart-board/<str:params>/', views.RestartBoard.as_view()),
-    path('replay-board/<str:params>/', views.ReplayBoard.as_view()),
-    path('room-board/<str:params>/', views.RoomBoard.as_view()),
-    path('pbn-board/<str:params>/', views.PbnBoard.as_view()),
+    path('new-board/', views.NewBoard.as_view()),
+    path('restart-board/', views.RestartBoard.as_view()),
+    path('replay-board/', views.ReplayBoard.as_view()),
+    path('room-board/', views.RoomBoard.as_view()),
+    path('pbn-board/', views.PbnBoard.as_view()),
 
     # History
     path('use-history-board/<str:params>/', views.UseHistoryBoard.as_view()),
-    path('get-history/<str:params>/', views.GetHistory.as_view()),
+    path('get-history/', views.GetHistory.as_view()),
     path('rotate-boards/<str:params>/', views.RotateBoards.as_view()),
 
     # path('save-board-file/<str:params>/', views.SaveBoardFilePut.as_view()),
-    path('get-archive-list/<str:params>/', views.GetArchiveList.as_view()),
-    path('get-board-file/<str:params>/', views.GetBoardFile.as_view()),
+    # path('get-archive-list/<str:params>/', views.GetArchiveList.as_view()),
+    # path('get-board-file/<str:params>/', views.GetBoardFile.as_view()),
     # path('save-board-file/<str:params>/', views.SaveBoardFile.as_view()),
 
     # Bids
-    path('bid-made/<str:params>/', views.BidMade.as_view()),
-    path('use-suggestion/<str:params>/', views.UseSuggestedBid.as_view()),
-    path('use-own-bid/<str:params>/', views.UseOwnBid.as_view()),
+    path('bid-made/', views.BidMade.as_view()),
+    path('use-suggestion/', views.UseSuggestedBid.as_view()),
+    path('use-own-bid/', views.UseOwnBid.as_view()),
 
     # Card play
-    path('cardplay/<str:params>/', views.CardPlay.as_view()),
-    path('card-played/<str:params>/', views.CardPlayed.as_view()),
+    path('cardplay/', views.CardPlay.as_view()),
+    path('card-played/', views.CardPlayed.as_view()),
     path('claim/<str:params>/', views.Claim.as_view()),
     path('compare-scores/<str:params>/', views.CompareScores.as_view()),
 

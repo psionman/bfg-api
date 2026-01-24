@@ -1,11 +1,8 @@
-import json
 
 from django.views import View
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.http import HttpResponse, JsonResponse
 from django.http import JsonResponse
 
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
 
 from rest_framework.views import APIView
@@ -21,223 +18,145 @@ from common.utilities import req_from_json
 @ensure_csrf_cookie
 @never_cache
 def ensure_csrf(request):
-    # response = JsonResponse({"status": "csrf cookie set"})
-    # response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    # response["Pragma"] = "no-cache"
-    # return response
-    # return JsonResponse({"status": "csrftoken set"})
     response = JsonResponse({"status": "csrftoken issued"})
     response["Cache-Control"] = "no-store"
     return response
 
 
-def handle_post_request(request, func, *args) -> JsonResponse:
-    req = req_from_json(request.body)
+def handle_request(request, func, *args) -> JsonResponse:
+    req = req_from_json(request.body or {})
     return JsonResponse(func(req, *args), safe=False)
 
 
-def handle_request(params: str, func, *args) -> JsonResponse:
+def handle_get_request(params: str, func, *args) -> JsonResponse:
     req = req_from_json(params)
     return JsonResponse(func(req, *args), safe=False)
 
 
 class StaticData(View):
-    def get(self, request, params):
-        context = app.static_data(request.META.get('REMOTE_ADDR'))
-        return JsonResponse(context, safe=False)
+    def post(self, request):
+        return handle_request(
+            request, app.static_data, request.META.get('REMOTE_ADDR'))
 
 
 class UserLogin(View):
     def post(self, request):
         return handle_request(
-            request.body,
-            app.user_login, request.META.get('REMOTE_ADDR'))
-
-    def get(self, request, params):
-        return UserLogin.post(request, params)
+            request, app.user_login, request.META.get('REMOTE_ADDR'))
 
 
 class UserLogout(View):
     @staticmethod
-    def post(request, params):
+    def post(request):
         return handle_request(
-            params, app.user_logout, request.META.get('REMOTE_ADDR'))
-
-    @staticmethod
-    def get(request, params):
-        return UserLogout.post(request, params)
+            request, app.user_logout, request.META.get('REMOTE_ADDR'))
 
 
 class UserSeat(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.seat_assigned)
-
-    @staticmethod
-    def get(request, params):
-        return UserSeat.post(request, params)
+    def post(request):
+        return handle_request(request, app.seat_assigned)
 
 
 class GetUserSetHands(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.get_user_set_hands)
-
-    @staticmethod
-    def get(request, params):
-        return GetUserSetHands.post(request, params)
+    def post(request):
+        return handle_request(request, app.get_user_set_hands)
 
 
 class SetUserSetHands(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.set_user_set_hands)
-
-    @staticmethod
-    def get(request, params):
-        return SetUserSetHands.post(request, params)
-
+    def post(request):
+        return handle_request(request, app.set_user_set_hands)
 
 
 class NewBoard(View):
     @staticmethod
-    def post(request, params):
-        req = req_from_json(params)
-        return handle_request(params, app.new_board)
-
-    @staticmethod
-    def get(request, params):
-        return NewBoard.post(request, params)
+    def post(request):
+        return handle_request(request, app.new_board)
 
 
 class RoomBoard(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.room_board)
-
-    @staticmethod
-    def get(request, params):
-        return RoomBoard.post(request, params)
+    def post(request):
+        return handle_request(request, app.room_board)
 
 
 class PbnBoard(View):
     @staticmethod
-    def post(request, params):
+    def post(request):
         """Return board from a PBN string."""
-        return handle_request(params, app.board_from_pbn)
-
-    @staticmethod
-    def get(request, params):
-        return PbnBoard.post(request, params)
+        return handle_request(request, app.board_from_pbn)
 
 
 class GetHistory(View):
     @staticmethod
-    def post(request, params):
+    def post(request):
         """Return board archive."""
-        return handle_request(params, app.get_history)
-
-    @staticmethod
-    def get(request, params):
-        return GetHistory.post(request, params)
+        return handle_request(request, app.get_history)
 
 
-class GetArchiveList(View):
-    @staticmethod
-    def post(request, params):
-        """Return a file of boards."""
-        return handle_request(params, app.get_archive_list)
-
-    @staticmethod
-    def get(request, params):
-        return GetArchiveList.post(request, params)
+# class GetArchiveList(View):
+#     @staticmethod
+#     def post(request):
+#         """Return a list of boards."""
+#         return handle_get_request(params, app.get_archive_list)
 
 
-class GetBoardFile(View):
-    @staticmethod
-    def post(request, params):
-        """Return board file."""
-        return handle_request(params, app.get_board_file)
-
-    @staticmethod
-    def get(request, params):
-        return GetBoardFile.post(request, params)
+# class GetBoardFile(View):
+#     @staticmethod
+#     def post(request, params):
+#         """Return board file."""
+#         return handle_get_request(params, app.get_board_file)
 
 
 class BidMade(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.bid_made)
-
-    @staticmethod
-    def get(request, params):
-        return BidMade.post(request, params)
+    def post(request):
+        return handle_request(request, app.bid_made)
 
 
 class UseSuggestedBid(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.use_bid, True)
-
-    @staticmethod
-    def get(request, params):
-        return UseSuggestedBid.post(request, params)
+    def post(request):
+        return handle_request(request, app.use_bid, True)
 
 
 class UseOwnBid(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.use_bid, False)
+    def post(request):
+        return handle_request(request, app.use_bid, False)
 
-    @staticmethod
-    def get(request, params):
-        return UseOwnBid.post(request, params)
 
 
 class CardPlay(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.cardplay_setup)
-
-    @staticmethod
-    def get(request, params):
-        return CardPlay.post(request, params)
+    def post(request):
+        return handle_request(request, app.cardplay_setup)
 
 
 class CardPlayed(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.card_played)
-
-    @staticmethod
-    def get(request, params):
-        return CardPlayed.post(request, params)
+    def post(request):
+        return handle_request(request, app.card_played)
 
 
 class RestartBoard(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.restart_board)
-
-    @staticmethod
-    def get(request, params):
-        return RestartBoard.post(request, params)
+    def post(request):
+        return handle_request(request, app.restart_board)
 
 
 class ReplayBoard(View):
     @staticmethod
-    def post(request, params):
-        return handle_request(params, app.replay_board)
-
-    @staticmethod
-    def get(request, params):
-        return ReplayBoard.post(request, params)
+    def post(request):
+        return handle_request(request, app.replay_board)
 
 
 class UseHistoryBoard(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.history_board)
+        return handle_get_request(params, app.history_board)
 
     @staticmethod
     def get(request, params):
@@ -247,7 +166,7 @@ class UseHistoryBoard(View):
 class RotateBoards(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.rotate_boards)
+        return handle_get_request(params, app.rotate_boards)
 
     @staticmethod
     def get(request, params):
@@ -258,7 +177,7 @@ class RotateBoards(View):
 class Claim(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.claim)
+        return handle_get_request(params, app.claim)
 
     @staticmethod
     def get(request, params):
@@ -268,7 +187,7 @@ class Claim(View):
 class CompareScores(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.compare_scores)
+        return handle_get_request(params, app.compare_scores)
 
     @staticmethod
     def get(request, params):
@@ -278,7 +197,7 @@ class CompareScores(View):
 class Undo(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.undo)
+        return handle_get_request(params, app.undo)
 
     @staticmethod
     def get(request, params):
@@ -308,7 +227,7 @@ class Undo(View):
 class Versions(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.package_versions)
+        return handle_get_request(params, app.package_versions)
 
     @staticmethod
     def get(request, params):
@@ -318,7 +237,7 @@ class Versions(View):
 class MessageSent(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.message_sent)
+        return handle_get_request(params, app.message_sent)
 
     @staticmethod
     def get(request, params):
@@ -328,7 +247,7 @@ class MessageSent(View):
 class MessageReceived(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.message_received)
+        return handle_get_request(params, app.message_received)
 
     @staticmethod
     def get(request, params):
@@ -338,7 +257,7 @@ class MessageReceived(View):
 class DatabaseUpdate(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.database_update)
+        return handle_get_request(params, app.database_update)
 
     @staticmethod
     def get(request, params):
@@ -348,7 +267,7 @@ class DatabaseUpdate(View):
 class UserStatus(View):
     @staticmethod
     def post(request, params):
-        return handle_request(params, app.get_user_status)
+        return handle_get_request(params, app.get_user_status)
 
     @staticmethod
     def get(request, params):
