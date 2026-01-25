@@ -202,25 +202,36 @@ def database_update(req: GameRequest) -> None:
 
 def get_user_status(req) -> dict:
     user = get_user_from_username(req.user_query)
-
     last_activity_iso = None
-    if user.last_activity:
-        time_diff = abs(timezone.now() - user.last_activity)
-        if time_diff > timedelta(hours=1):
-            user.logged_in = False
-            user.save()
 
-        last_activity_iso = (
-            user.last_activity
-            .replace(microsecond=(user.last_activity.microsecond // 1000) * 1000)  # milliseconds only
-            .isoformat()
-            .replace('+00:00', 'Z')  # if it's UTC-aware
-        )
+    if user.last_activity:
+        _logout_inactive_user(user)
+        last_activity_iso = _get_last_activity(user)
 
     return {
         'logged_in': user.logged_in,
         'last_activity': last_activity_iso,
     }
+
+
+def _logout_inactive_user(user: object) -> None:
+    time_diff = abs(timezone.now() - user.last_activity)
+    if time_diff > timedelta(hours=1):
+        user.logged_in = False
+        user.save()
+
+
+def _get_last_activity(user: object) -> str:
+    return (
+        user.last_activity
+        .replace(
+            microsecond=(
+                user.last_activity.microsecond // 1000
+                ) * 1000
+            )  # milliseconds only
+        .isoformat()
+        .replace('+00:00', 'Z')  # if it's UTC-aware
+    )
 
 
 def seat_assigned(req: GameRequest) -> None:

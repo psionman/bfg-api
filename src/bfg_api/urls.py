@@ -18,11 +18,11 @@ urlpatterns = [
     path('user-login/', views.UserLogin.as_view()),
     path('user-seat/', views.UserSeat.as_view()),
     path('user-logout/', views.UserLogout.as_view()),
-    path('user-status/<str:params>/', views.UserStatus.as_view()),
+    # path('user-status/', views.UserStatus.as_view()),
 
     # REST api
-    path('api', views.RoomListApiView.as_view()),
-    path('api/<str:room_name>', views.RoomDetailApiView.as_view()),
+    # path('api', views.RoomListApiView.as_view()),
+    # path('api/<str:room_name>', views.RoomDetailApiView.as_view()),
 
     # Room
     path('get-user-set-hands/', views.GetUserSetHands.as_view()),
@@ -36,9 +36,9 @@ urlpatterns = [
     path('pbn-board/', views.PbnBoard.as_view()),
 
     # History
-    path('use-history-board/<str:params>/', views.UseHistoryBoard.as_view()),
+    path('use-history-board/', views.UseHistoryBoard.as_view()),
     path('get-history/', views.GetHistory.as_view()),
-    path('rotate-boards/<str:params>/', views.RotateBoards.as_view()),
+    path('rotate-boards/', views.RotateBoards.as_view()),
 
     # path('save-board-file/<str:params>/', views.SaveBoardFilePut.as_view()),
     # path('get-archive-list/<str:params>/', views.GetArchiveList.as_view()),
@@ -53,17 +53,17 @@ urlpatterns = [
     # Card play
     path('cardplay/', views.CardPlay.as_view()),
     path('card-played/', views.CardPlayed.as_view()),
-    path('claim/<str:params>/', views.Claim.as_view()),
-    path('compare-scores/<str:params>/', views.CompareScores.as_view()),
+    path('claim/', views.Claim.as_view()),
+    path('compare-scores/', views.CompareScores.as_view()),
 
     # Utilities
-    path('undo/<str:params>/', views.Undo.as_view()),
-    path('versions/', views.Versions.as_view()),
+    path('undo/', views.Undo.as_view()),
+    # path('versions/', views.Versions.as_view()),
     # path('get-parameters/<str:params>/', views.GetParameters.as_view()),
-    path('database-update/<str:params>/', views.DatabaseUpdate.as_view()),
+    path('database-update/', views.DatabaseUpdate.as_view()),
 
 
     # Messages
-    path('message-sent/<str:params>/', views.MessageSent.as_view()),
-    path('message-received/<str:params>/', views.MessageReceived.as_view()),
+    path('message-sent/', views.MessageSent.as_view()),
+    path('message-received/', views.MessageReceived.as_view()),
 ]
