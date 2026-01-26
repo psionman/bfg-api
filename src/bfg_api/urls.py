@@ -1,30 +1,33 @@
 """
-To test live server:
+BFG API URL configuration.
 
-https://bidforgame.com/bfg/versions/
+Live server health/version check:
+    https://bidforgame.com/bfg/versions/
 
+Conventions:
+- All state-mutating endpoints use POST
+- Request bodies are JSON
+- CSRF protection is enabled for all POST requests
+- Client must call /ensure-csrf/ once before POSTing
 """
+
 
 from django.urls import path
 from . import views
 
 
 urlpatterns = [
-    # Static data
+    # Bootstrap / Static
     path('ensure-csrf/', views.ensure_csrf),
     path('static-data/', views.StaticData.as_view()),
 
-    # user login/out
+    # User session
     path('user-login/', views.UserLogin.as_view()),
     path('user-seat/', views.UserSeat.as_view()),
     path('user-logout/', views.UserLogout.as_view()),
-    # path('user-status/', views.UserStatus.as_view()),
+    path('user-status/', views.UserStatus.as_view()),
 
-    # REST api
-    # path('api', views.RoomListApiView.as_view()),
-    # path('api/<str:room_name>', views.RoomDetailApiView.as_view()),
-
-    # Room
+    # Room / Setup
     path('get-user-set-hands/', views.GetUserSetHands.as_view()),
     path('set-user-set-hands/', views.SetUserSetHands.as_view()),
 
@@ -40,12 +43,7 @@ urlpatterns = [
     path('get-history/', views.GetHistory.as_view()),
     path('rotate-boards/', views.RotateBoards.as_view()),
 
-    # path('save-board-file/<str:params>/', views.SaveBoardFilePut.as_view()),
-    # path('get-archive-list/<str:params>/', views.GetArchiveList.as_view()),
-    # path('get-board-file/<str:params>/', views.GetBoardFile.as_view()),
-    # path('save-board-file/<str:params>/', views.SaveBoardFile.as_view()),
-
-    # Bids
+    # Bidding
     path('bid-made/', views.BidMade.as_view()),
     path('use-suggestion/', views.UseSuggestedBid.as_view()),
     path('use-own-bid/', views.UseOwnBid.as_view()),
@@ -56,14 +54,12 @@ urlpatterns = [
     path('claim/', views.Claim.as_view()),
     path('compare-scores/', views.CompareScores.as_view()),
 
-    # Utilities
+    # Utilities / Admin
     path('undo/', views.Undo.as_view()),
-    # path('versions/', views.Versions.as_view()),
-    # path('get-parameters/<str:params>/', views.GetParameters.as_view()),
     path('database-update/', views.DatabaseUpdate.as_view()),
 
 
-    # Messages
+    # Messaging
     path('message-sent/', views.MessageSent.as_view()),
     path('message-received/', views.MessageReceived.as_view()),
 ]

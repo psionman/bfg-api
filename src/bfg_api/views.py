@@ -5,13 +5,7 @@ from django.http import JsonResponse
 
 from django.views.decorators.cache import never_cache
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-
-from common.models import Room
 import common.application as app
-from common.serializers import RoomSerializer
 from common.utilities import req_from_json
 
 
@@ -24,19 +18,17 @@ def ensure_csrf(request):
 
 
 def handle_request(request, func, *args) -> JsonResponse:
-    req = req_from_json(request.body or {})
+    raw = request.body or b'{}'
+    req = req_from_json(raw)
     return JsonResponse(func(req, *args), safe=False)
 
 
-# def handle_get_request(params: str, func, *args) -> JsonResponse:
-#     req = req_from_json(params)
-#     return JsonResponse(func(req, *args), safe=False)
-
-
 class StaticData(View):
-    def post(self, request):
-        return handle_request(
-            request, app.static_data, request.META.get('REMOTE_ADDR'))
+    def get(self, request):
+        return JsonResponse(
+            app.static_data(request.META.get('REMOTE_ADDR')),
+            safe=False
+        )
 
 
 class UserLogin(View):
@@ -49,6 +41,13 @@ class UserLogout(View):
     def post(self, request):
         return handle_request(
             request, app.user_logout, request.META.get('REMOTE_ADDR'))
+
+
+class UserStatus(View):
+    def get(self, request):
+        raw = request.body or b'{}'
+        req = req_from_json(raw)
+        return JsonResponse(app.get_user_status(req),safe=False)
 
 
 class UserSeat(View):
@@ -86,20 +85,6 @@ class GetHistory(View):
     def post(self, request):
         """Return board archive."""
         return handle_request(request, app.get_history)
-
-
-# class GetArchiveList(View):
-#     @staticmethod
-#     def post(request):
-#         """Return a list of boards."""
-#         return handle_get_request(params, app.get_archive_list)
-
-
-# class GetBoardFile(View):
-#     @staticmethod
-#     def post(request, params):
-#         """Return board file."""
-#         return handle_get_request(params, app.get_board_file)
 
 
 class BidMade(View):
@@ -160,37 +145,6 @@ class CompareScores(View):
 class Undo(View):
     def post(self, request):
         return handle_request(request, app.undo)
-
-# class GetParameters(View):
-#     @staticmethod
-#     def get(request, params):
-#         req = req_from_json(params)
-#         context = {
-#             'slice': 200
-#         }
-#         return JsonResponse(context, safe=False)
-
-
-# class SaveBoardFile(View):
-#     @staticmethod
-#     def get(request, params):
-#         req = req_from_json(params)
-#         context = {'boards_saved': False, }
-#         if req.pbn_text:
-#             context = app.save_board_file(req)
-#         return JsonResponse(context, safe=False)
-
-
-# class Versions(View):
-#     @staticmethod
-#     def post(request, params):
-#         return handle_get_request(params, app.package_versions)
-
-#     @staticmethod
-#     def get(request, params):
-#         return Versions.post(request, params)
-
-
 class MessageSent(View):
     def post(self, request):
         return handle_request(request, app.message_sent)
@@ -204,111 +158,3 @@ class MessageReceived(View):
 class DatabaseUpdate(View):
     def post(self, request):
         return handle_request(request, app.database_update)
-
-
-# class UserStatus(View):
-#     def post(self, request):
-#         return handle_request(request, app.get_user_status)
-
-
-# class RoomListApiView(APIView):
-#     # add permission to check if user is authenticated
-#     # permission_classes = [permissions.IsAuthenticated]
-
-#     # 1. list all
-#     def get(self, request, *args, **kwargs):
-#         '''
-#         list all the Room items for given requested user
-#         '''
-#         rooms = Room.objects.all()
-#         serializer = RoomSerializer(rooms, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-#     # 2. Create
-#     def post(self, request, *args, **kwargs):
-#         '''
-#         Create the Room with given Room data
-#         '''
-#         data = {
-#             'name': request.data.get('room_name'),
-#             'mode': request.data.get('mode'),
-#             'last_task': request.data.get('last_task'),
-#             'last_data': request.data.get('last_data'),
-#             'board': request.data.get('board'),
-#         }
-#         serializer = RoomSerializer(data=data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class RoomDetailApiView(APIView):
-#     # add permission to check if user is authenticated
-#     # permission_classes = [permissions.IsAuthenticated]
-
-#     def get_object(self, room_name):
-#         '''
-#         Helper method to get the object with given room_name, and user_id
-#         '''
-#         try:
-#             return Room.objects.get(name=room_name)
-#         except Room.DoesNotExist:
-#             return None
-
-#     # 3. Retrieve
-#     def get(self, request, room_name, *args, **kwargs):
-#         '''
-#         Retrieves the Room with given room_name
-#         '''
-#         room_instance = self.get_object(room_name)
-#         if not room_instance:
-#             return Response(
-#                 {"res": "Object with Room id does not exists"},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         serializer = RoomSerializer(room_instance)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-#     # 4. Update
-#     def put(self, request, room_name, *args, **kwargs):
-#         '''
-#         Updates the Room item with given room_name if exists
-#         '''
-#         room_instance = self.get_object(room_name)
-#         if not room_instance:
-#             return Response(
-#                 {"res": "Object with Room id does not exists"},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-#         data = {
-#             'name': request.data.get('room_name'),
-#             'mode': request.data.get('mode'),
-#             'last_task': request.data.get('last_task'),
-#             'last_data': request.data.get('last_data'),
-#             'board': request.data.get('board'),
-#         }
-#         serializer = RoomSerializer(instance=room_instance, data=data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     # 5. Delete
-#     def delete(self, request, room_name, *args, **kwargs):
-#         '''
-#         Deletes the Room item with given room_name if exists
-#         '''
-#         room_instance = self.get_object(room_name)
-#         if not room_instance:
-#             return Response(
-#                 {"res": "Object with Room id does not exists"},
-#                 status=status.HTTP_400_BAD_REQUEST
-#             )
-#         room_instance.delete()
-#         return Response(
-#             {"res": "Object deleted!"},
-#             status=status.HTTP_200_OK
-#         )

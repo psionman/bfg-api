@@ -1,4 +1,22 @@
-"""API functionality for BfG."""
+"""
+BfG API application layer.
+
+This module implements the server-side application logic for the BfG API.
+Each function corresponds to a single API action and is invoked by a Django
+view after request parsing and CSRF validation.
+
+Responsibilities:
+- Translate GameRequest objects into domain operations
+- Coordinate calls to board, bidding, and cardplay subsystems
+- Persist user and room state
+- Emit structured logs for all state changes
+
+Conventions:
+- All functions are side-effect free unless explicitly mutating state
+- Functions return JSON-serializable dicts or None
+- Authentication and CSRF are handled at the view layer
+"""
+
 
 from importlib.metadata import version
 from datetime import timedelta
@@ -10,7 +28,7 @@ from bridgeobjects import CALLS
 from bfgdealer import Board, SOLO_SET_HANDS, DUO_SET_HANDS
 
 from common.constants import PACKAGES
-from common.images import CURSOR, CALL_IMAGES, CARD_IMAGES
+from common.images import CURSOR, CARD_IMAGES
 from common.archive import (
     get_history_boards_text, rotate_archived_boards, save_boards_file_to_room,
     get_user_archive_list, get_board_file_from_room)
@@ -29,13 +47,14 @@ from _version import __version__ as api_version
 
 logger = structlog.get_logger()
 
-
-def static_data(req: GameRequest, ip_address: str) -> dict[str, object]:
+# ─────────────────────────────
+# Static / bootstrap
+# ─────────────────────────────
+def static_data(ip_address: str) -> dict[str, object]:
     """Return a dict of static data."""
     logger.info('Static data', ip_address=ip_address)
     context = {
         'card_images': CARD_IMAGES,
-        # 'call_images': CALL_IMAGES,
         'cursor': CURSOR,
         'calls': CALLS,
         'solo_set_hands': SOLO_SET_HANDS,
@@ -43,10 +62,13 @@ def static_data(req: GameRequest, ip_address: str) -> dict[str, object]:
         'sources': SOURCES,
         'versions': package_versions(),
     }
-    # context['call_images']['A'] = context['call_images']['alert']
     return context
 
 
+
+# ─────────────────────────────
+# User session
+# ─────────────────────────────
 def user_login(req: GameRequest, ip_address: str) -> None:
     user = get_user_from_username(req.username)
     user.logged_in = True
@@ -64,6 +86,23 @@ def user_logout(req: GameRequest, ip_address: str) -> None:
     return None
 
 
+def get_user_status(req) -> dict:
+    user = get_user_from_username(req.user_query)
+    last_activity_iso = None
+
+    if user.last_activity:
+        _logout_inactive_user(user)
+        last_activity_iso = _get_last_activity(user)
+
+    return {
+        'logged_in': user.logged_in,
+        'last_activity': last_activity_iso,
+    }
+
+
+# ─────────────────────────────
+# Board lifecycle
+# ─────────────────────────────
 def new_board(req: GameRequest) -> dict[str, object]:
     """Return the context after a new board has been generated."""
     return get_new_board(req)
@@ -71,6 +110,18 @@ def new_board(req: GameRequest) -> dict[str, object]:
 
 def room_board(req: GameRequest) -> dict[str, object]:
     return get_room_board(req)
+
+
+def restart_board(req: GameRequest) -> dict[str, object]:
+    """Return the context for restart board."""
+    logger.info('restart-board', username=req.username)
+    return restart_board_context(req)
+
+
+def replay_board(req: GameRequest) -> dict[str, object]:
+    """Return the context for replay board."""
+    logger.info('replay-board', username=req.username)
+    return replay_board_context(req)
 
 
 def board_from_pbn(req: GameRequest):
@@ -102,6 +153,9 @@ def rotate_boards(req: GameRequest) -> dict[str, object]:
     return rotate_archived_boards(req)
 
 
+# ─────────────────────────────
+# Bidding
+# ─────────────────────────────
 def bid_made(req: GameRequest) -> dict[str, str]:
     return get_bid_made(req)
 
@@ -110,6 +164,10 @@ def use_bid(req: GameRequest, use_suggested_bid=True) -> dict[str, str]:
     return get_bid_context(req, use_suggested_bid)
 
 
+
+# ─────────────────────────────
+# Card play
+# ─────────────────────────────
 def cardplay_setup(req: GameRequest) -> dict[str, object]:
     """ Return the static context for cardplay."""
     return get_cardplay_context(req)
@@ -121,18 +179,6 @@ def card_played(req: GameRequest) -> dict[str, object]:
         if necessary, complete the trick.
     """
     return card_played_context(req)
-
-
-def restart_board(req: GameRequest) -> dict[str, object]:
-    """Return the context for restart board."""
-    logger.info('restart-board', username=req.username)
-    return restart_board_context(req)
-
-
-def replay_board(req: GameRequest) -> dict[str, object]:
-    """Return the context for replay board."""
-    logger.info('replay-board', username=req.username)
-    return replay_board_context(req)
 
 
 def claim(req: GameRequest):
@@ -198,21 +244,6 @@ def database_update(req: GameRequest) -> None:
     #     username=req.username,
     #     payload=req.payload)
     return None
-
-
-def get_user_status(req) -> dict:
-    user = get_user_from_username(req.user_query)
-    last_activity_iso = None
-
-    if user.last_activity:
-        _logout_inactive_user(user)
-        last_activity_iso = _get_last_activity(user)
-
-    return {
-        'logged_in': user.logged_in,
-        'last_activity': last_activity_iso,
-    }
-
 
 def _logout_inactive_user(user: object) -> None:
     time_diff = abs(timezone.now() - user.last_activity)
