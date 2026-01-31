@@ -47,6 +47,7 @@ from _version import __version__ as api_version
 
 logger = structlog.get_logger()
 
+
 # ─────────────────────────────
 # Static / bootstrap
 # ─────────────────────────────
@@ -63,7 +64,6 @@ def static_data(ip_address: str) -> dict[str, object]:
         'versions': package_versions(),
     }
     return context
-
 
 
 # ─────────────────────────────

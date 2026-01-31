@@ -1,3 +1,17 @@
+"""
+Cardplay context module for bridge game backend.
+
+Provides functions to:
+- Load board state from a request
+- Generate context for cardplay, trick updates, and board replay
+- Handle claims and compare scores
+- Suggest next card using AI or double-dummy logic
+
+Dependencies:
+- bridgeobjects, bfgdealer, bfgcardplay
+- common.utilities, common.contexts, common.board
+"""
+
 import structlog
 
 from bridgeobjects import SEATS, Card
@@ -16,6 +30,10 @@ def _load_board(req: GameRequest) -> Board:
     return Board().from_json(req.room.board)
 
 
+def _clone_board(board: Board) -> Board:
+    return Board().from_json(board.to_json())
+
+
 def get_cardplay_context(req: GameRequest) -> dict[str, object]:
     """ Return the static context for cardplay."""
     board = _load_board(req)
@@ -24,6 +42,7 @@ def get_cardplay_context(req: GameRequest) -> dict[str, object]:
 
     if passed_out(board.bid_history):
         return {}
+
     suggested_card = _get_suggested_card_name(board, req)
     trick = board.tricks[-1]
 
@@ -35,11 +54,12 @@ def get_cardplay_context(req: GameRequest) -> dict[str, object]:
         'trick_leader': trick.leader,
         'trick_count': len(board.tricks),
     }
-    state_context = get_board_context(req, board)
-    return merge_context(play_context, **state_context)
+    # state_context = get_board_context(req, board)
+    # return merge_context(play_context, **state_context)
+    return _with_state_context(req, board, play_context)
 
 
-def _setup_first_trick(board: Board):
+def _setup_first_trick(board: Board) -> None:
     if board.tricks and board.tricks[0].cards:
         return
     trick = board.setup_first_trick_for_board()
@@ -53,7 +73,6 @@ def _get_suggested_card_name(board: Board, req: GameRequest) -> str:
     if not board.tricks[0].cards:
         card = next_card(board, req.use_double_dummy)
         return card.name if card else ''
-
 
     return board.tricks[0].cards[0].name
 
@@ -73,20 +92,21 @@ def card_played_context(req: GameRequest) -> dict[str, object]:
     )
 
     # Handle pre-filled trick (e.g. PBN)
-    _complete_trick_if_ready(board, update_score=False)
+    winner = False
+    if _is_trick_complete(board.get_current_trick()):
+        winner = _finalize_trick(board, update_score=True)
 
-    _apply_played_card(board, req.card_played)
+    _play_card_if_valid(board, req.card_played)
 
-    winner = _complete_trick_if_ready(board, update_score=True)
+    if _is_trick_complete(board.get_current_trick()):
+        winner = _finalize_trick(board, update_score=True)
 
     save_board(req.room, board)
 
     trick = board.tricks[-2] if winner else board.get_current_trick()
 
-    trick_context = _build_trick_context(req, board, trick, winner)
-    state_context = get_board_context(req, board)
-
-    return merge_context(state_context, **trick_context)
+    trick_state = _build_trick_context(req, board, trick, winner)
+    return _with_state_context(req, board, trick_state)
 
 
 def _build_trick_context(
@@ -97,7 +117,7 @@ def _build_trick_context(
     return {
         'suggested_card': get_next_card(board, req),
         'trick_leader': trick.leader,
-        'trick_suit': _get_trick_suit(trick),
+        'trick_suit': _get_trick_suit(board),
         'trick_cards': [card.name for card in trick.cards],
         'trick_count': len(board.tricks),
         'declarer': board.contract.declarer,
@@ -105,9 +125,12 @@ def _build_trick_context(
     }
 
 
-def _complete_trick_if_ready(board: Board, update_score: bool) -> str | None:
+def _is_trick_complete(trick: Trick) -> bool:
+    return len(trick.cards) == 4
+
+
+def _finalize_trick(board: Board, update_score: bool) -> str | None:
     """
-        If current trick has 4 cards:
         - completes the trick
         - updates score (optional)
         - advances current_player
@@ -115,9 +138,6 @@ def _complete_trick_if_ready(board: Board, update_score: bool) -> str | None:
         Returns the winner seat or None.
     """
     trick = board.get_current_trick()
-
-    if len(trick.cards) != 4:
-        return None
 
     trick.complete(board.contract.denomination)
     board.current_player = trick.winner
@@ -135,31 +155,35 @@ def _start_next_trick(board: Board, leader: str) -> None:
     board.tricks.append(next_trick)
 
 
-def _apply_played_card(board: Board, card_played: str) -> bool:
+def _can_play_card(board: Board, card: Card) -> bool:
     seat = board.current_player
     if seat not in board.hands:
         return False
-
-    if not card_played:
+    if card not in board.hands[seat].unplayed_cards:
         return False
-
-    this_card = Card(card_played)
-    unplayed_cards = board.hands[seat].unplayed_cards
-    trick = board.get_current_trick()
-
-    if this_card not in unplayed_cards:
+    if card in board.get_current_trick().cards:
         return False
-
-    if this_card in trick.cards:
-        return False
-
-    trick.cards.append(this_card)
-    unplayed_cards.remove(this_card)
-    board.current_player = get_current_player(trick)
     return True
 
 
-def _get_trick_suit(trick: Trick) -> str | None:
+def _play_card(board: Board, card: Card) -> None:
+    trick = board.get_current_trick()
+    trick.cards.append(card)
+    board.hands[board.current_player].unplayed_cards.remove(card)
+    board.current_player = get_current_player(trick)
+
+
+def _play_card_if_valid(board: Board, card_played: str) -> bool:
+    card = Card(card_played)
+    if not _can_play_card(board, card):
+        return False
+
+    _play_card(board, card)
+    return True
+
+
+def _get_trick_suit(board: Board) -> str | None:
+    trick = board.tricks[-1]
     return trick.suit.name if trick.suit else None
 
 
@@ -184,8 +208,9 @@ def replay_board_context(req: GameRequest) -> dict[str, object]:
     board = _load_board(req)
     _initialise_board(board)
     suggested_card = _get_suggested_card_name(board, req)
-    board_context = get_board_context(req, board)
-    return merge_context(board_context, **{'suggested_card': suggested_card})
+    # board_context = get_board_context(req, board)
+    # return merge_context(board_context, **{'suggested_card': suggested_card})
+    return _with_state_context(req, board, {'suggested_card': suggested_card})
 
 
 def _initialise_board(board: Board) -> None:
@@ -198,70 +223,73 @@ def _initialise_board(board: Board) -> None:
     _setup_first_trick(board)
 
 
-def claim_context(req: GameRequest):
+def claim_context(req: GameRequest) -> dict[str, object]:
     board = _load_board(req)
-    old_board = _load_board(req)
+    snapshot = _clone_board(board)
 
-    NS_target = _get_NS_target_tricks(board, req)
+    ns_target = _get_ns_target_tricks(board, req)
 
-    total_tricks = board.NS_tricks + board.EW_tricks
-    (ns_tricks, ew_tricks) = _play_out_board(board, req.use_double_dummy)
+    (ns_tricks, ew_tricks) = _auto_play_remaining_tricks(
+        board, req.use_double_dummy)
     (board.NS_tricks, board.EW_tricks) = (ns_tricks, ew_tricks)
 
-    if NS_target == board.NS_tricks:
-        accepted = True
-        board.NS_tricks = NS_target
-        board.EW_tricks = 13 - NS_target
-    else:
-        accepted = False
-        board = old_board
+    accepted = ns_tricks == ns_target
 
-    claim_context = {
-        'accept_claim': accepted,
-    }
+    if accepted:
+        board.NS_tricks = ns_target
+        board.EW_tricks = 13 - ns_target
+    else:
+        board = snapshot
 
     logger.info(
         'claim',
         username=req.username,
-        tricks=req.claim_tricks,
+        claimed=req.claim_tricks,
+        estimated=ns_tricks,
         accepted=accepted)
-    state_context = get_board_context(req, board)
-
-    return merge_context(state_context, **claim_context)
+    return _with_state_context(req, board, {'accept_claim': accepted})
 
 
-def _get_NS_target_tricks(board, req):
+def _get_ns_target_tricks(board, req) -> int:
     claim_tricks = int(req.claim_tricks)
     if claim_tricks < 0:
         claim_tricks = 13 - board.NS_tricks - board.EW_tricks + claim_tricks
     return board.NS_tricks + claim_tricks
 
 
-def _play_out_board(
-        board: Board, use_double_dummy: bool = False) -> tuple[ int, int]:
+def _auto_play_remaining_tricks(
+        board: Board, use_double_dummy: bool = False) -> tuple[int, int]:
     while board.NS_tricks + board.EW_tricks < 13:
         card = next_card(board, use_double_dummy)
         if not card:
             break
-        _apply_played_card(board, card.name if card else '')
-        _complete_trick_if_ready(board, update_score=True)
+        _play_card_if_valid(board, card.name if card else '')
+        if _is_trick_complete(board.get_current_trick()):
+            _finalize_trick(board, update_score=True)
     return (board.NS_tricks, board.EW_tricks)
 
 
-def compare_scores_context(req):
+def compare_scores_context(req) -> dict[str, object]:
     board = _load_board(req)
-    old_board = _load_board(req)
+    snapshot = _clone_board(board)
 
     _initialise_board(board)
-    get_board_context(req, board)  # Save the board
-    (ns_tricks, ew_tricks) = _play_out_board(board, req.use_double_dummy)
+    # get_board_context(req, board)  # Save the board
+    (ns_tricks, ew_tricks) = _auto_play_remaining_tricks(
+        board, req.use_double_dummy)
 
-    board = old_board
-    state_context = get_board_context(req, board)
+    board = snapshot
+    # state_context = get_board_context(req, board)
 
-    claim_context = {
+    claim_result = {
         'NS_tricks_target': ns_tricks,
         'EW_tricks_target': ew_tricks,
     }
 
-    return merge_context(state_context, **claim_context)
+    # return merge_context(state_context, **claim_result)
+    return _with_state_context(req, board, claim_result)
+
+
+def _with_state_context(
+        req: GameRequest, board: Board, extra) -> dict[str, object]:
+    return merge_context(get_board_context(req, board), **extra)

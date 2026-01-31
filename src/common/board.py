@@ -292,7 +292,6 @@ def _get_context_for_pbn_board(
     return merge_context(board_context, **trick_context)
 
 
-
 def _trick_context_for_pbn_board(board: Board) -> dict[str, str]:
     """
     Initialise trick context for a PBN board.

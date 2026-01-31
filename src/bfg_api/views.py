@@ -145,6 +145,8 @@ class CompareScores(View):
 class Undo(View):
     def post(self, request):
         return handle_request(request, app.undo)
+
+
 class MessageSent(View):
     def post(self, request):
         return handle_request(request, app.message_sent)

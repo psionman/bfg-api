@@ -127,6 +127,7 @@ def update_user_activity(req: GameRequest) -> None:
 #     user.save()
     ...
 
+
 def three_passes(bid_history: list[str]) -> bool:    # X
     """Return True if there are 3 passes."""
     return len(bid_history) >= 4 and (

@@ -1,6 +1,12 @@
 # History
 
-## 1.2.4 2 January 2026
+## 1.3.0 - 28 January 2026
+1. Major changes in urls and views using POST
+2. Refactor all modules
+3. Alter settings.py to utilise csrf
+
+
+## 1.2.4 - 2 January 2026
 
 1. Rationalise logger objects
 2. Add User to models
