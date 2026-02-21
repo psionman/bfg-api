@@ -20,6 +20,7 @@ urlpatterns = [
     # Bootstrap / Static
     path('ensure-csrf/', views.ensure_csrf),
     path('static-data/', views.StaticData.as_view()),
+    path('amsterdam/', views.debug_view.as_view()),
 
     # User session
     path('user-login/', views.UserLogin.as_view()),

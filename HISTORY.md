@@ -1,6 +1,7 @@
 # History
 
 ## 1.3.0 - 28 January 2026
+Use with netlify Version 3.2.0
 1. Major changes in urls and views using POST
 2. Refactor all modules
 3. Alter settings.py to utilise csrf

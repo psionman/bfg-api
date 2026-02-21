@@ -20,6 +20,7 @@
     },
     "peacock.color": "green",
     "cSpell.words": [
-        "bidforgame"
+        "bidforgame",
+        "OPENBLAS"
     ]
 }

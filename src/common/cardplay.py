@@ -282,8 +282,8 @@ def compare_scores_context(req) -> dict[str, object]:
     # state_context = get_board_context(req, board)
 
     claim_result = {
-        'NS_tricks_target': ns_tricks,
-        'EW_tricks_target': ew_tricks,
+        'ns_tricks_target': ns_tricks,
+        'ew_tricks_target': ew_tricks,
     }
 
     # return merge_context(state_context, **claim_result)

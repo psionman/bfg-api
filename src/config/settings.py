@@ -10,15 +10,24 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import os
 from pathlib import Path
+import logging
 import structlog
 from dotenv import load_dotenv
 
 
 load_dotenv()
 
-TESTING = False if os.getenv('TESTING', 'False') == 'False' else True
+os.environ["OMP_NUM_THREADS"] = "1"        # OpenMP / BLAS threads
+os.environ["MKL_NUM_THREADS"] = "1"        # Intel MKL
+os.environ["OPENBLAS_NUM_THREADS"] = "1"   # OpenBLAS
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # Apple vecLib
+os.environ["NUMEXPR_NUM_THREADS"] = "1"    # numexpr
 
-DEBUG = TESTING
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("DJANGO_SECRET_KEY environment variable is not set")
+
+DEBUG = False if os.getenv('DEBUG', 'False') == 'False' else True
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,46 +36,95 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e3=69=6&$^($a(ksyf7nt1#kvz#)&dd-ei&y2_g0))(&)-0lm$'
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost'
     'www.bidforgame.com',
     'bidforgame.com',
-    'bidforgame.co.uk']
+    'bidforgame.co.uk',
+    'www.bidforgame.co.uk',          # ← add this if you use www on .co.uk too
+    '.bidforgame.com',               # ← wildcard for all subdomains
+    '.bidforgame.co.uk',
+]
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8888',          # ← your frontend/dev server
     'http://127.0.0.1:8888',          # sometimes browsers send this
-    # If you ever use HTTPS locally (e.g. mkcert or self-signed)
-    # 'https://localhost:8888',
-    # 'https://127.0.0.1:8888',
 
     # Production ones – include scheme!
     'https://www.bidforgame.com',
     'https://bidforgame.com',
     'https://bidforgame.co.uk',
+    "https://bidforgame.netlify.app",
+    "https://*.netlify.app",
     # If you have subdomains or variants later: 'https://*.bidforgame.com'
 ]
 
+BFG_CORS_ALLOWED_ORIGINS = [
+    "https://bidforgame.netlify.app",
+]
+
+# dev convenience
+if DEBUG:
+    BFG_CORS_ALLOWED_ORIGINS += [
+        "http://localhost:8888",
+        "http://127.0.0.1:8888",
+        "http://localhost:5173",  # vite
+    ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8888",     # your frontend port
     "http://127.0.0.1:8888",
-    # Add production: "https://www.bidforgame.com", etc.
+#     # Add production:
+    "https://www.bidforgame.com",
+    "https://bidforgame.com",
+    "https://bidforgame.co.uk",
+    "https://www.bidforgame.co.uk",
+    "https://bidforgame.netlify.app",
+    # "https://*.netlify.app",           # optional but convenient for previews
 ]
 
-if TESTING:
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.netlify\.app$",
+]
+
+# Explicitly allow OPTIONS
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+# CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_CREDENTIALS = True  # Required for cookies to be sent/received
+
+if DEBUG:
     CSRF_COOKIE_SAMESITE = "Lax"
     CSRF_COOKIE_SECURE = False
     SESSION_COOKIE_SECURE = False
 else:
     CSRF_COOKIE_SAMESITE = "None"  # Not sure about this in production
     CSRF_COOKIE_SECURE = True  # True only in HTTPS
-
-CORS_ALLOW_CREDENTIALS = True  # Required for cookies to be sent/received
 
 
 # Application definition
@@ -87,9 +145,12 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Must be as high as possible in middleware!!!
+    'corsheaders.middleware.CorsMiddleware',  # Must be as high as possible
+    "common.middleware.cors.BfgCorsMiddleware",
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -122,20 +183,11 @@ LOGGING = {
     'disable_existing_loggers': False,
 
     'formatters': {
-        'structlog_console': {
-            '()': structlog.stdlib.ProcessorFormatter,
-            'processor': structlog.dev.ConsoleRenderer(),
-            'foreign_pre_chain': [
-                structlog.processors.TimeStamper(fmt='iso'),
-                structlog.stdlib.add_log_level,
-                structlog.stdlib.add_logger_name,
-            ],
-        },
         'structlog_json': {
             '()': structlog.stdlib.ProcessorFormatter,
             'processor': structlog.processors.JSONRenderer(),
             'foreign_pre_chain': [
-                structlog.processors.TimeStamper(fmt='iso'),
+                structlog.processors.TimeStamper(fmt='iso', utc=True),
                 structlog.stdlib.add_log_level,
                 structlog.stdlib.add_logger_name,
             ],
@@ -143,32 +195,43 @@ LOGGING = {
     },
 
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'structlog_console',
-        },
         'file_json': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'logs/bfg.log',
             'maxBytes': 5_000_000,
-            'backupCount': 5,
+            'backupCount': 10,
             'formatter': 'structlog_json',
+            'level': 'INFO',
+            # 'level': 'WARNING',   # or 'WARNING' if you want quieter
         },
     },
-
     'loggers': {
-        '': {   # ROOT LOGGER
-            'handlers': ['console', 'file_json'],
-            'level': 'INFO',
+        '': {
+            'handlers': ['file_json'],
+            # 'level': 'INFO',   # or 'WARNING' if you want quieter
+            'level': 'WARNING',   # or 'WARNING' if you want quieter
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['file_json'],
+            'level': 'WARNING',
+            'propagate': False,
         },
 
-        'django.server': {   # optional quieting of runserver spam
-            'handlers': ['console'],
-            'level': 'WARNING',  # set django server log level
+        'django.server': {
+            'handlers': ['file_json'],
+            'level': 'WARNING',
             'propagate': False,
         },
     },
 }
+
+if DEBUG:
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG)
+    console.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+    logging.getLogger().addHandler(console)
+    print("Forced console handler for DEBUG mode")
 
 
 DATABASES = {

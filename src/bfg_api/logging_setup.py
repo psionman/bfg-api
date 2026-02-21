@@ -58,6 +58,7 @@ def configure_structlog():
     # --- Configure structlog ---
     structlog.configure(
         processors=[
+            drop_large_fields,
             timestamper,
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,
@@ -70,4 +71,11 @@ def configure_structlog():
         cache_logger_on_first_use=True,
     )
 
-    print(f"Structlog configured. DEBUG={DEBUG}, log_level={log_level}")
+    # print(f"Structlog configured. DEBUG={DEBUG}, log_level={log_level}")
+
+
+def drop_large_fields(_, __, event_dict):
+    for k, v in list(event_dict.items()):
+        if isinstance(v, str) and len(v) > MAX_LOG_MESSAGE_SIZE:
+            event_dict[k] = f"<truncated {len(v)} chars>"
+    return event_dict
