@@ -36,7 +36,8 @@ SECRET_KEY = set_secret_key()
 DEBUG = get_debug_state()
 
 # Setup logging
-LOGGING = setup_logging(app_log_to_console(DEBUG), active_log_modules())
+LOGGING = setup_logging(active_log_modules(), app_log_to_console(DEBUG))
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
