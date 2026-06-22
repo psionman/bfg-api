@@ -9,6 +9,19 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from .cors import (
+    bfg_cors_allowed_origins,
+    cors_allow_headers,
+    cors_allow_methods,
+    cors_allowed_origin_regexes,
+    cors_allowed_origins,
+)
+from .csrf import (
+    csrf_cookie_samesite,
+    csrf_cookie_secure,
+    csrf_trusted_origins,
+    session_cookie_secure,
+)
 from .logging import setup_logging
 
 load_dotenv()
@@ -18,6 +31,7 @@ os.environ["MKL_NUM_THREADS"] = "1"  # Intel MKL
 os.environ["OPENBLAS_NUM_THREADS"] = "1"  # OpenBLAS
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"  # Apple vecLib
 os.environ["NUMEXPR_NUM_THREADS"] = "1"  # numexpr
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("DJANGO_SECRET_KEY environment variable is not set")
@@ -52,84 +66,19 @@ ALLOWED_HOSTS = [
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-CSRF_TRUSTED_ORIGINS = [
-    # Production ones – include scheme!
-    "https://www.bidforgame.com",
-    "https://bidforgame.com",
-    "https://bidforgame.co.uk",
-    "https://bidforgame.netlify.app",
-    "https://*.netlify.app",
-    # If you have subdomains or variants later: 'https://*.bidforgame.com'
-]
+DEV_PORTS = ["5173", "5174", "5175", "8888", "8000"]
 
-BFG_CORS_ALLOWED_ORIGINS = [
-    "https://bidforgame.netlify.app",
-]
+CSRF_TRUSTED_ORIGINS = csrf_trusted_origins(debug=DEBUG, dev_ports=DEV_PORTS)
+CSRF_COOKIE_SAMESITE = csrf_cookie_samesite(DEBUG)
+CSRF_COOKIE_SECURE = csrf_cookie_secure(DEBUG)
+SESSION_COOKIE_SECURE = session_cookie_secure(DEBUG)
 
-CORS_ALLOWED_ORIGINS = [
-    "https://www.bidforgame.com",
-    "https://bidforgame.com",
-    "https://bidforgame.co.uk",
-    "https://www.bidforgame.co.uk",
-    "https://bidforgame.netlify.app",
-    # "https://*.netlify.app",           # optional but convenient for previews
-]
-
-# dev convenience
-if DEBUG:
-    DEV_PORTS = ["5173", "5174", "5175", "8888", "8000"]
-    for port in DEV_PORTS:
-        CORS_ALLOWED_ORIGINS.extend(
-            [
-                f"http://localhost:{port}",
-                f"http://127.0.0.1:{port}",
-            ]
-        )
-        CSRF_TRUSTED_ORIGINS.extend(
-            [
-                f"http://localhost:{port}",
-                f"http://127.0.0.1:{port}",
-            ]
-        )
-
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.netlify\.app$",
-]
-
-# Explicitly allow OPTIONS
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
-
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-]
-
-# CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOW_CREDENTIALS = True  # Required for cookies to be sent/received
-
-if DEBUG:
-    CSRF_COOKIE_SAMESITE = "Lax"
-    CSRF_COOKIE_SECURE = False
-    SESSION_COOKIE_SECURE = False
-else:
-    CSRF_COOKIE_SAMESITE = "None"  # Not sure about this in production
-    CSRF_COOKIE_SECURE = True  # True only in HTTPS
+BFG_CORS_ALLOWED_ORIGINS = bfg_cors_allowed_origins()
+CORS_ALLOWED_ORIGINS = cors_allowed_origins(debug=DEBUG, dev_ports=DEV_PORTS)
+CORS_ALLOWED_ORIGIN_REGEXES = cors_allowed_origin_regexes()
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = cors_allow_methods()
+CORS_ALLOW_HEADERS = cors_allow_headers()
 
 
 # Application definition
@@ -179,51 +128,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-
-# LOGGING = {
-#     "version": 1,
-#     "disable_existing_loggers": False,
-#     "formatters": {
-#         "structlog_json": {
-#             "()": structlog.stdlib.ProcessorFormatter,
-#             "processor": structlog.processors.JSONRenderer(),
-#             "foreign_pre_chain": [
-#                 structlog.processors.TimeStamper(fmt="iso", utc=True),
-#                 structlog.stdlib.add_log_level,
-#                 structlog.stdlib.add_logger_name,
-#             ],
-#         },
-#     },
-#     "handlers": {
-#         "file_json": {
-#             "class": "logging.handlers.RotatingFileHandler",
-#             "filename": "logs/bfg.log",
-#             "maxBytes": 5_000_000,
-#             "backupCount": 10,
-#             "formatter": "structlog_json",
-#             "level": "INFO",
-#             # 'level': 'WARNING',   # or 'WARNING' if you want quieter
-#         },
-#     },
-#     "loggers": {
-#         "": {
-#             "handlers": ["file_json"],
-#             # 'level': 'INFO',   # or 'WARNING' if you want quieter
-#             "level": "WARNING",  # or 'WARNING' if you want quieter
-#             "propagate": False,
-#         },
-#         "django": {
-#             "handlers": ["file_json"],
-#             "level": "WARNING",
-#             "propagate": False,
-#         },
-#         "django.server": {
-#             "handlers": ["file_json"],
-#             "level": "INFO",
-#             "propagate": False,
-#         },
-#     },
-# }
 
 if DEBUG:
     console = logging.StreamHandler()
