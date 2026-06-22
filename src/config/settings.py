@@ -3,8 +3,6 @@
 Django settings for bfg-api project.
 """
 
-import logging
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,37 +20,26 @@ from .csrf import (
     csrf_trusted_origins,
     session_cookie_secure,
 )
+from .environ import (
+    active_log_modules,
+    app_log_to_console,
+    get_debug_state,
+    set_secret_key,
+    set_thread_env_vars,
+)
 from .logging import setup_logging
 
 load_dotenv()
 
-os.environ["OMP_NUM_THREADS"] = "1"  # OpenMP / BLAS threads
-os.environ["MKL_NUM_THREADS"] = "1"  # Intel MKL
-os.environ["OPENBLAS_NUM_THREADS"] = "1"  # OpenBLAS
-os.environ["VECLIB_MAXIMUM_THREADS"] = "1"  # Apple vecLib
-os.environ["NUMEXPR_NUM_THREADS"] = "1"  # numexpr
-
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-if not SECRET_KEY:
-    raise ValueError("DJANGO_SECRET_KEY environment variable is not set")
-
-DEBUG = False if os.getenv("DEBUG", "False") == "False" else True
-APP_LOG_TO_CONSOLE = (
-    os.getenv("APP_LOG_TO_CONSOLE", "True" if DEBUG else "False") == "True"
-)
-ACTIVE_LOG_MODULES = os.getenv("ACTIVE_LOG_MODULES", "").split(",")
+set_thread_env_vars()
+SECRET_KEY = set_secret_key()
+DEBUG = get_debug_state()
 
 # Setup logging
-LOGGING = setup_logging(ACTIVE_LOG_MODULES, APP_LOG_TO_CONSOLE)
-
+LOGGING = setup_logging(app_log_to_console(DEBUG), active_log_modules())
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
-
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -128,16 +115,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-
-if DEBUG:
-    console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG)
-    console.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-    )
-    logging.getLogger().addHandler(console)
-    print("Forced console handler for DEBUG mode")
-
 
 DATABASES = {
     "default": {
