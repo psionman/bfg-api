@@ -17,35 +17,44 @@ Conventions:
 - Authentication and CSRF are handled at the view layer
 """
 
-
-from importlib.metadata import version
-from datetime import timedelta
 import json
-import structlog
+from datetime import timedelta
+from importlib.metadata import version
+
+from bfgdealer import DUO_SET_HANDS, SOLO_SET_HANDS, Board
+from bridgeobjects import CALLS
 from django.utils import timezone
 
-from bridgeobjects import CALLS
-from bfgdealer import Board, SOLO_SET_HANDS, DUO_SET_HANDS
-
-from common.constants import PACKAGES
-from common.images import CURSOR, CARD_IMAGES
-from common.archive import (
-    get_history_boards_text, rotate_archived_boards, save_boards_file_to_room,
-    get_user_archive_list, get_board_file_from_room)
-from common.board import (
-    get_new_board, get_history_board, get_board_from_pbn, undo_context,
-    get_room_board, restart_board_context)
-
-from common.bidding import get_bid_made, get_bid_context
-from common.cardplay import (
-    get_cardplay_context, card_played_context, replay_board_context,
-    claim_context, compare_scores_context)
-from common.constants import SOURCES
-from common.utilities import get_user_from_username, GameRequest
-
 from _version import __version__ as api_version
+from common.archive import (
+    get_board_file_from_room,
+    get_history_boards_text,
+    get_user_archive_list,
+    rotate_archived_boards,
+    save_boards_file_to_room,
+)
+from common.bidding import get_bid_context, get_bid_made
+from common.board import (
+    get_board_from_pbn,
+    get_history_board,
+    get_new_board,
+    get_room_board,
+    restart_board_context,
+    undo_context,
+)
+from common.cardplay import (
+    card_played_context,
+    claim_context,
+    compare_scores_context,
+    get_cardplay_context,
+    replay_board_context,
+)
+from common.constants import PACKAGES, SOURCES
+from common.images import CARD_IMAGES, CURSOR
+from common.utilities import GameRequest, get_user_from_username
+from config.logging import get_logger
 
-logger = structlog.get_logger()
+logger = get_logger(__name__)
 
 
 # ─────────────────────────────
@@ -53,15 +62,15 @@ logger = structlog.get_logger()
 # ─────────────────────────────
 def static_data(ip_address: str) -> dict[str, object]:
     """Return a dict of static data."""
-    logger.info('Static data', ip_address=ip_address)
+    logger.info("Static data", ip_address=ip_address)
     context = {
-        'card_images': CARD_IMAGES,
-        'cursor': CURSOR,
-        'calls': CALLS,
-        'solo_set_hands': SOLO_SET_HANDS,
-        'duo_set_hands': DUO_SET_HANDS,
-        'sources': SOURCES,
-        'versions': package_versions(),
+        "card_images": CARD_IMAGES,
+        "cursor": CURSOR,
+        "calls": CALLS,
+        "solo_set_hands": SOLO_SET_HANDS,
+        "duo_set_hands": DUO_SET_HANDS,
+        "sources": SOURCES,
+        "versions": package_versions(),
     }
     return context
 
@@ -73,8 +82,7 @@ def user_login(req: GameRequest, ip_address: str) -> None:
     user = get_user_from_username(req.username)
     user.logged_in = True
     user.save()
-    logger.info(
-        'login', username=req.username, ip_address=ip_address)
+    logger.info("login", username=req.username, ip_address=ip_address)
     return None
 
 
@@ -82,21 +90,20 @@ def user_logout(req: GameRequest, ip_address: str) -> None:
     user = get_user_from_username(req.username)
     user.logged_in = False
     user.save()
-    logger.info('logout', username=req.username, ip_address=ip_address)
+    logger.info("logout", username=req.username, ip_address=ip_address)
     return None
 
 
 def get_user_status(req) -> dict:
     user = get_user_from_username(req.user_query)
     last_activity_iso = None
-
     if user.last_activity:
         _logout_inactive_user(user)
         last_activity_iso = _get_last_activity(user)
 
     return {
-        'logged_in': user.logged_in,
-        'last_activity': last_activity_iso,
+        "logged_in": user.logged_in,
+        "last_activity": last_activity_iso,
     }
 
 
@@ -105,22 +112,24 @@ def get_user_status(req) -> dict:
 # ─────────────────────────────
 def new_board(req: GameRequest) -> dict[str, object]:
     """Return the context after a new board has been generated."""
+    logger.info("new-board", board=req)
     return get_new_board(req)
 
 
 def room_board(req: GameRequest) -> dict[str, object]:
+    logger.info("room-board", board=req.board)
     return get_room_board(req)
 
 
 def restart_board(req: GameRequest) -> dict[str, object]:
     """Return the context for restart board."""
-    logger.info('restart-board', username=req.username)
+    logger.info("restart-board", board=req.board)
     return restart_board_context(req)
 
 
 def replay_board(req: GameRequest) -> dict[str, object]:
     """Return the context for replay board."""
-    logger.info('replay-board', username=req.username)
+    logger.info("replay-board", board=req.board)
     return replay_board_context(req)
 
 
@@ -164,19 +173,18 @@ def use_bid(req: GameRequest, use_suggested_bid=True) -> dict[str, str]:
     return get_bid_context(req, use_suggested_bid)
 
 
-
 # ─────────────────────────────
 # Card play
 # ─────────────────────────────
 def cardplay_setup(req: GameRequest) -> dict[str, object]:
-    """ Return the static context for cardplay."""
+    """Return the static context for cardplay."""
     return get_cardplay_context(req)
 
 
 def card_played(req: GameRequest) -> dict[str, object]:
     """
-        Add a card to the current trick and increment current player.
-        if necessary, complete the trick.
+    Add a card to the current trick and increment current player.
+    if necessary, complete the trick.
     """
     return card_played_context(req)
 
@@ -195,9 +203,9 @@ def undo(req: GameRequest):
 
 def get_user_set_hands(req: GameRequest):
     return {
-        'set_hands': json.loads(req.room.set_hands),
-        'use_set_hands': req.room.use_set_hands,
-        'display_hand_type': req.room.display_hand_type,
+        "set_hands": json.loads(req.room.set_hands),
+        "use_set_hands": req.room.use_set_hands,
+        "display_hand_type": req.room.display_hand_type,
     }
 
 
@@ -208,14 +216,13 @@ def set_user_set_hands(req: GameRequest):
     room.display_hand_type = req.display_hand_type
     room.save()
     logger.info(
-        'update-set-hands',
-        username=req.username,
-        set_hands=req.set_hands)
+        "update-set-hands", username=req.username, set_hands=req.set_hands
+    )
 
 
 def package_versions():
     versions = {
-        'api': api_version,
+        "api": api_version,
     }
     for package in PACKAGES:
         versions[package] = version(package)
@@ -223,27 +230,19 @@ def package_versions():
 
 
 def message_sent(req: GameRequest) -> None:
-    logger.info(
-        'message-sent',
-        username=req.username,
-        message=req.message)
+    logger.info("message-sent", username=req.username, message=req.message)
     return None
 
 
 def message_received(req: GameRequest) -> None:
-    logger.info(
-        'message-received',
-        username=req.username,
-        message=req.message)
+    logger.info("message-received", username=req.username, message=req.message)
     return None
 
 
 def database_update(req: GameRequest) -> None:
-    # logger.info(
-    #     'database-update',
-    #     username=req.username,
-    #     payload=req.payload)
+    logger.info("database-update", username=req.username, payload=req.payload)
     return None
+
 
 def _logout_inactive_user(user: object) -> None:
     time_diff = abs(timezone.now() - user.last_activity)
@@ -254,17 +253,14 @@ def _logout_inactive_user(user: object) -> None:
 
 def _get_last_activity(user: object) -> str:
     return (
-        user.last_activity
-        .replace(
-            microsecond=(
-                user.last_activity.microsecond // 1000
-                ) * 1000
-            )  # milliseconds only
+        user.last_activity.replace(
+            microsecond=(user.last_activity.microsecond // 1000) * 1000
+        )  # milliseconds only
         .isoformat()
-        .replace('+00:00', 'Z')  # if it's UTC-aware
+        .replace("+00:00", "Z")  # if it's UTC-aware
     )
 
 
 def seat_assigned(req: GameRequest) -> None:
-    logger.info('seat-assigned', username=req.username, seat=req.seat)
+    logger.info("seat-assigned", username=req.username, seat=req.seat)
     return None

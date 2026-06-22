@@ -2,17 +2,18 @@ from bridgeobjects import CALLS
 
 from common.images import CALLS_REMOVE
 
-EXTRA_CALLS = ['P', 'D', 'R']
+EXTRA_CALLS = ["P", "D", "R"]
 MAXIMUM_BID_LEVEL = 7
 
 
-class BiddingBox(object):
+class BiddingBox:
     """Handle the bidding box for BfG.
 
-        bb_names is a list of bid names
+    bb_names is a list of bid names
 
-        bb_names is '' if a blank appears in that position in bb_images
+    bb_names is '' if a blank appears in that position in bb_images
     """
+
     def __init__(self):
         pass
 
@@ -38,32 +39,33 @@ class BiddingBox(object):
             (
                 CALLS.index(bid)
                 for bid in bid_history[::-1]
-                if bid not in ('P', 'D', 'R')
+                if bid not in ("P", "D", "R")
             ),
             -1,
         )
-        for index in range(last_bid_index+1):
-            bb_names[index] = 'blank'
+        for index in range(last_bid_index + 1):
+            bb_names[index] = "blank"
         return bb_names
 
     def _bidding_box_extras(self, bid_history, add_warnings):
         """Return P and D and R bid box images and names as lists."""
-        bb_names = ['P']
+        bb_names = ["P"]
         if self._can_show_double(bid_history):
-            bb_names.append('D')
+            bb_names.append("D")
         if self._can_show_redouble(bid_history):
-            bb_names.append('R')
+            bb_names.append("R")
         if add_warnings:
-            bb_names.extend(('alert', 'stop'))
+            bb_names.extend(("alert", "stop"))
         return bb_names
 
     @staticmethod
     def _can_show_double(bid_history):
         """Return True if it is appropriate to show Double."""
+
         def _all_passes():
             """Return True if all bids are passes."""
             for bid in bid_history:
-                if bid != 'P':
+                if bid != "P":
                     return False
             return True
 
@@ -71,25 +73,26 @@ class BiddingBox(object):
             return False
         if _all_passes():
             return False
-        if bid_history[-1] not in ['P', 'D', 'R']:
+        if bid_history[-1] not in ["P", "D", "R"]:
             return True
         return (
             len(bid_history) >= 3
-            and bid_history[-3] not in ('P', 'D', 'R')
-            and bid_history[-2] == 'P'
-            and bid_history[-1] == 'P'
+            and bid_history[-3] not in ("P", "D", "R")
+            and bid_history[-2] == "P"
+            and bid_history[-1] == "P"
         )
 
     @staticmethod
     def _can_show_redouble(bid_history):
         """Return True if it is appropriate to show the Redouble."""
-        if (len(bid_history) >= 2 and
-                bid_history[-1] == 'D'):
+        if len(bid_history) >= 2 and bid_history[-1] == "D":
             return True
-        elif (len(bid_history) >= 4 and
-                bid_history[-3] == 'D' and
-                bid_history[-2] == 'P' and
-                bid_history[-1] == 'P'):
+        elif (
+            len(bid_history) >= 4
+            and bid_history[-3] == "D"
+            and bid_history[-2] == "P"
+            and bid_history[-1] == "P"
+        ):
             return True
         else:
             return False

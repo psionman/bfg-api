@@ -1,12 +1,12 @@
 """Helper classes for BfG."""
-import json
-from datetime import datetime, timezone
 
+import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
-from bridgeobjects import SEATS, Trick, Call, Denomination
 from bfgdealer import Board
+from bridgeobjects import SEATS, Call, Denomination, Trick
 
 from common.models import Room, User
 
@@ -18,7 +18,7 @@ class GameRequest:
     board_id: str = ""
     seat: str = "N"
     room_name: str = ""
-    room: Room = None,
+    room: Room | None = None
     bid: str = ""
     generate_contract: bool = False
     set_hands: list = field(default_factory=list)
@@ -52,7 +52,7 @@ class GameRequest:
 
         self.seat_index = SEATS.index(self.seat)
 
-        if self.mode not in {"solo", "duo", "solo-no-comments", ''}:
+        if self.mode not in {"solo", "duo", "solo-no-comments", ""}:
             print(f"{self.mode=}")
             raise ValueError(f"Invalid mode: {self.mode}")
         self._update_user_activity()
@@ -99,14 +99,14 @@ def req_from_json(raw_params: str) -> GameRequest:
     )
 
 
-class UserProxy():
+class UserProxy:
     def __init__(self, username=None, seat=None, room_name=None):
         self.pk = username
         self.seat = seat
         self.room_name = room_name
         self.bid_double_click = False
         self.card_double_click = False
-        self.username = ''
+        self.username = ""
         self.auto_play = False
 
     def __repr__(self):
@@ -122,28 +122,28 @@ def get_user_from_username(username: str) -> User:
 
 
 def update_user_activity(req: GameRequest) -> None:
-#     user = get_user_from_username(req.username)
-#     user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
-#     user.save()
+    #     user = get_user_from_username(req.username)
+    #     user.last_activity = datetime.now().replace(tzinfo=timezone.utc)
+    #     user.save()
     ...
 
 
-def three_passes(bid_history: list[str]) -> bool:    # X
+def three_passes(bid_history: list[str]) -> bool:  # X
     """Return True if there are 3 passes."""
     return len(bid_history) >= 4 and (
-        bid_history[-1] == 'P'
-        and bid_history[-2] == 'P'
-        and bid_history[-3] == 'P'
+        bid_history[-1] == "P"
+        and bid_history[-2] == "P"
+        and bid_history[-3] == "P"
     )
 
 
-def passed_out(bid_history: list[str]) -> bool:    # X
+def passed_out(bid_history: list[str]) -> bool:  # X
     """Return True if there are 4 passes."""
     return len(bid_history) == 4 and (
-        bid_history[0] == 'P'
-        and bid_history[1] == 'P'
-        and bid_history[2] == 'P'
-        and bid_history[3] == 'P'
+        bid_history[0] == "P"
+        and bid_history[1] == "P"
+        and bid_history[2] == "P"
+        and bid_history[3] == "P"
     )
 
 
@@ -165,13 +165,13 @@ def _unplayed_cards_have_not_been_generated(board: Board) -> bool:
 
 
 def dict_print(context):
-    print('')
-    print('='*40, 'dict print', '='*40)
+    print("")
+    print("=" * 40, "dict print", "=" * 40)
     sorted_keys = sorted(context, key=lambda x: x)
     for key in sorted_keys:
         print(f"{key}, {context[key]}")
-    print('='*100)
-    print('')
+    print("=" * 100)
+    print("")
 
 
 def get_current_player(trick: Trick) -> str:
@@ -200,7 +200,7 @@ def _get_suppress_list(board: Board) -> tuple:
             break
 
     level = int(call[0])
-    if call[1:] == 'NT':
+    if call[1:] == "NT":
         denoms = []
         level += 1
 
@@ -209,10 +209,10 @@ def _get_suppress_list(board: Board) -> tuple:
     can_redouble = _can_redouble(calls)
 
     return {
-        'level': level,
-        'suppress_denoms': denoms,
-        'can_double': can_double,
-        'can_redouble': can_redouble,
+        "level": level,
+        "suppress_denoms": denoms,
+        "can_double": can_double,
+        "can_redouble": can_redouble,
     }
 
 
@@ -220,16 +220,18 @@ def _get_last_call(board: Board) -> str:
     for call in reversed(board.bid_history):
         if Call(call).is_value_call:
             return call
-    return ''
+    return ""
 
 
 def _can_double(calls: list) -> bool:
     if calls and Call(calls[-1]).is_value_call:
         return True
-    if (len(calls) >= 3
-            and Call(calls[-3]).is_value_call
-            and Call(calls[-2]).is_pass
-            and Call(calls[-1]).is_pass):
+    if (
+        len(calls) >= 3
+        and Call(calls[-3]).is_value_call
+        and Call(calls[-2]).is_pass
+        and Call(calls[-1]).is_pass
+    ):
         return True
     return False
 
@@ -238,12 +240,10 @@ def _can_redouble(calls: list) -> bool:
     if calls and Call(calls[-1]).is_double:
         return True
     return bool(
-        (
-            len(calls) >= 3
-            and Call(calls[-3]).is_double
-            and Call(calls[-2]).is_pass
-            and Call(calls[-1]).is_pass
-        )
+        len(calls) >= 3
+        and Call(calls[-3]).is_double
+        and Call(calls[-2]).is_pass
+        and Call(calls[-1]).is_pass
     )
 
 

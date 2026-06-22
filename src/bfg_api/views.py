@@ -1,38 +1,47 @@
-
-from django.views import View
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.http import JsonResponse, HttpResponse
+# bfg_appi/views.py
+from django.http import HttpResponse, JsonResponse
 from django.middleware.csrf import get_token
-from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-
-import structlog
+from django.views import View
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 
 import common.application as app
 from common.utilities import req_from_json
+from config.logging import get_logger
 
-logger = structlog.get_logger()
+logger = get_logger(__name__)
 
 
 @ensure_csrf_cookie
 @never_cache
 def ensure_csrf(request):
     token = get_token(request)  # force generation
-    logger.info('cookie', csrf_token=token)
-    return JsonResponse({
-        'status': 'ok',
-        'csrftoken': token  # send it in body too – easier for JS
-    })
+    logger.info("cookie", csrf_token=token)
+    return JsonResponse(
+        {
+            "status": "ok",
+            "csrftoken": token,  # send it in body too – easier for JS
+        }
+    )
 
 
 def handle_request(request, func, *args) -> JsonResponse:
-    raw = request.body or b'{}'
-    req = req_from_json(raw)
-    return JsonResponse(func(req, *args), safe=False)
+    try:
+        raw = request.body or b"{}"
+        req = req_from_json(raw)
+        logger.info(
+            "handle_request", func=getattr(func, "__name__", repr(func))
+        )
+        return JsonResponse(func(req, *args), safe=False)
+    except Exception:
+        logger.exception(
+            "handle_request failed", func=getattr(func, "__name__", repr(func))
+        )
+        raise
 
 
-class debug_view(View):
+class DebugView(View):
     def get(self, request):
         output = f"""
             <h1>Request Debug Info</h1>
@@ -48,66 +57,79 @@ class debug_view(View):
 @method_decorator(csrf_exempt, name="dispatch")
 class StaticData(View):
     def get(self, request):
-        # logger.info(
-        #     'static-data',
-        #     versions=app.static_data(
-        #         request.META.get('REMOTE_ADDR')
-        #         )['versions'])
+        print("StaticData.get", request.META.get("REMOTE_ADDR"))
         return JsonResponse(
-            app.static_data(request.META.get('REMOTE_ADDR')),
-            safe=False
+            app.static_data(request.META.get("REMOTE_ADDR")), safe=False
         )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class UserLogin(View):
     def post(self, request):
+        print("UserLogin.post", request.META.get("REMOTE_ADDR"))
         return handle_request(
-            request, app.user_login, request.META.get('REMOTE_ADDR'))
+            request, app.user_login, request.META.get("REMOTE_ADDR")
+        )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class UserLogout(View):
     def post(self, request):
         return handle_request(
-            request, app.user_logout, request.META.get('REMOTE_ADDR'))
+            request, app.user_logout, request.META.get("REMOTE_ADDR")
+        )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class UserStatus(View):
     def get(self, request):
-        raw = request.body or b'{}'
+        logger.info(
+            "UserStatus.get", remote_addr=request.META.get("REMOTE_ADDR")
+        )
+        raw = request.body or b"{}"
         req = req_from_json(raw)
-        return JsonResponse(app.get_user_status(req),safe=False)
+        try:
+            response = app.get_user_status(req)
+            return JsonResponse(response, safe=False)
+        except Exception as e:
+            print("UserStatus.get error:", e)
+            raise
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class UserSeat(View):
     def post(self, request):
+        logger.info(
+            "UserSeat.post", remote_addr=request.META.get("REMOTE_ADDR")
+        )
         return handle_request(request, app.seat_assigned)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class GetUserSetHands(View):
     def post(self, request):
+        logger.info("GetUserSetHands.post")
         return handle_request(request, app.get_user_set_hands)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class SetUserSetHands(View):
     def post(self, request):
+        logger.info("SetUserSetHands.post")
         return handle_request(request, app.set_user_set_hands)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class NewBoard(View):
     def post(self, request):
+        logger.info("NewBoard.post")
         return handle_request(request, app.new_board)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class RoomBoard(View):
     def post(self, request):
+        logger.info("RoomBoard.post")
         return handle_request(request, app.room_board)
 
 
@@ -115,6 +137,7 @@ class RoomBoard(View):
 class PbnBoard(View):
     def post(self, request):
         """Return board from a PBN string."""
+        logger.info("PbnBoard.post")
         return handle_request(request, app.board_from_pbn)
 
 
@@ -122,6 +145,7 @@ class PbnBoard(View):
 class GetHistory(View):
     def post(self, request):
         """Return board archive."""
+        logger.info("GetHistory.post")
         return handle_request(request, app.get_history)
 
 
