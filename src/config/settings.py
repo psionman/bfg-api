@@ -20,6 +20,14 @@ from .csrf import (
     csrf_trusted_origins,
     session_cookie_secure,
 )
+from .definitions import (
+    get_allowed_hosts,
+    get_auth_password_validators,
+    get_databases,
+    get_installed_apps,
+    get_middleware,
+    get_templates,
+)
 from .environ import (
     active_log_modules,
     app_log_to_console,
@@ -42,25 +50,18 @@ LOGGING = setup_logging(active_log_modules(), app_log_to_console(DEBUG))
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhostwww.bidforgame.com",
-    "bidforgame.com",
-    "bidforgame.co.uk",
-    "www.bidforgame.co.uk",  # ← add this if you use www on .co.uk too
-    ".bidforgame.com",  # ← wildcard for all subdomains
-    ".bidforgame.co.uk",
-]
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 DEV_PORTS = ["5173", "5174", "5175", "8888", "8000"]
 
+# CSRF
 CSRF_TRUSTED_ORIGINS = csrf_trusted_origins(debug=DEBUG, dev_ports=DEV_PORTS)
 CSRF_COOKIE_SAMESITE = csrf_cookie_samesite(DEBUG)
 CSRF_COOKIE_SECURE = csrf_cookie_secure(DEBUG)
 SESSION_COOKIE_SECURE = session_cookie_secure(DEBUG)
 
+# CORS
 BFG_CORS_ALLOWED_ORIGINS = bfg_cors_allowed_origins()
 CORS_ALLOWED_ORIGINS = cors_allowed_origins(debug=DEBUG, dev_ports=DEV_PORTS)
 CORS_ALLOWED_ORIGIN_REGEXES = cors_allowed_origin_regexes()
@@ -70,78 +71,21 @@ CORS_ALLOW_HEADERS = cors_allow_headers()
 
 
 # Application definition
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "corsheaders",
-    # Local
-    "pages",
-    "common",
-    "rest_framework",
-    "bfg_api.apps.BfgApiConfig",
-]
+ALLOWED_HOSTS = get_allowed_hosts()
 
-MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # Must be as high as possible
-    "common.middleware.cors.BfgCorsMiddleware",
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
+INSTALLED_APPS = get_installed_apps()
+
+MIDDLEWARE = get_middleware()
 
 ROOT_URLCONF = "config.urls"
 
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [str(BASE_DIR.joinpath("templates"))],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
-]
+TEMPLATES = get_templates(BASE_DIR)
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+DATABASES = get_databases(BASE_DIR)
 
-
-# Password validation
-# https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
+AUTH_PASSWORD_VALIDATORS = get_auth_password_validators()
 
 
 # Internationalization
